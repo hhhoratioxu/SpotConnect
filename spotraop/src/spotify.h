@@ -33,6 +33,8 @@ void spotDeletePlayer(struct spotPlayer *spotPlayer);
 void spotOpen(uint16_t portBase, uint16_t portRange, char* username, char* password);
 void spotClose(void);
 void spotNotify(struct spotPlayer* spotPlayer, int event, ...);
+// HoriSpotConnect: validate quality before any network service is started.
+int spotValidateQualityMode(void);
 
 #ifdef __cplusplus
 }

@@ -55,3 +55,11 @@ spotconnect*.zip
 client_info.h
 
 Spot*.zip
+
+# HoriSpotConnect local state and build outputs
+.hori-build/
+dist/
+private-test-results/
+*.credentials
+*.env
+!scripts/*.sh

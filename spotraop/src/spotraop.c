@@ -260,11 +260,13 @@ void shadowRequest(struct shadowPlayer* shadow, enum spotEvent event, ...) {
 	}
 	case SPOT_LOAD:
 		LOG_INFO("[%p]: spotify LOAD request", Device);
-		raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true);
+		LOG_INFO("RAOP_SESSION accepted=%d audible_output=UNVERIFIED",
+			 raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true));
 		break;
 	case SPOT_PLAY:
 		LOG_INFO("[%p]: spotify PLAY request", Device);
-		raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true);
+		LOG_INFO("RAOP_SESSION accepted=%d audible_output=UNVERIFIED",
+			 raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true));
 		Device->SpotState = SPOT_PLAY;
 		break;
 	case SPOT_VOLUME: {
@@ -505,6 +507,21 @@ static void *MainThread(void *args) {
 }
 
 /*----------------------------------------------------------------------------*/
+/* The Spotify PCM callback supplies 44.1kHz/s16/stereo. A TXT declaration
+ * cannot change that PCM's format. Absent fields remain unverified defaults. */
+static bool HoriTxtSupports(const char *text, long required) {
+	if (!text || !*text) return true;
+	while (*text) {
+		char *end;
+		long value = strtol(text, &end, 10);
+		if (end == text) return false;
+		if (value == required && (*end == '\0' || *end == ',')) return true;
+		if (*end != ',') return false;
+		text = end + 1;
+	}
+	return false;
+}
+
 static bool AddRaopDevice(struct sMR *Device, mdnssd_service_t *s) {
 	pthread_attr_t pattr;
 	raop_crypto_t Crypto;
@@ -534,7 +551,7 @@ static bool AddRaopDevice(struct sMR *Device, mdnssd_service_t *s) {
 
 	if (am && strcasestr(am, "appletv") && pk && *pk) {
 		if (*Device->Config.RaopCredentials) {
-			LOG_INFO("[%p]: AppleTV with valid authentication key %s", Device, Device->Config.RaopCredentials);
+			LOG_INFO("[%p]: AppleTV authentication key configured (redacted)", Device);
 		} else {
 			LOG_INFO("[%p]: AppleTV with no authentication key, create one using '-l' option", Device);
 		}
@@ -603,12 +620,21 @@ static bool AddRaopDevice(struct sMR *Device, mdnssd_service_t *s) {
 	char *Channels = GetmDNSAttribute(s->attr, s->attr_count, "ch");
 	char *Codecs = GetmDNSAttribute(s->attr, s->attr_count, "cn");
 	char *Cipher = GetmDNSAttribute(s->attr, s->attr_count, "et");
+	if (!HoriTxtSupports(SampleRate, 44100) || !HoriTxtSupports(SampleSize, 16) ||
+		!HoriTxtSupports(Channels, 2) ||
+		(Codecs && !HoriTxtSupports(Codecs, Device->Config.AlacEncode ? 1 : 0))) {
+		LOG_ERROR("AIRPLAY_FORMAT_UNSUPPORTED: sender requires 44100 Hz, 16 bits, stereo and a lossless RAOP codec");
+		Device->Running = false;
+		NFREE(SampleSize); NFREE(SampleRate); NFREE(Channels); NFREE(Codecs); NFREE(Cipher);
+		NFREE(am); NFREE(md); NFREE(pk);
+		return false;
+	}
 
 	if (!Codecs || !strchr(Codecs, '1')) {
 		LOG_WARN("[%p]: ALAC not in codecs, player might not work %s", Device, Codecs);
 	}
 
-	if ((Device->Config.Encryption || Auth) && strchr(Cipher, '1'))	Crypto = RAOP_RSA;
+	if ((Device->Config.Encryption || Auth) && Cipher && strchr(Cipher, '1'))	Crypto = RAOP_RSA;
 	else Crypto = RAOP_CLEAR;
 
 	char* password = NULL;
@@ -631,12 +657,12 @@ static bool AddRaopDevice(struct sMR *Device, mdnssd_service_t *s) {
 	Device->Raop = raopcl_create(glHost, glPortBase, glPortRange,
 								 glDACPid, Device->ActiveRemote,
 								 Device->Config.AlacEncode ? RAOP_ALAC : RAOP_ALAC_RAW , FRAMES_PER_BLOCK,
-								 (uint32_t) MS2TS(Device->Config.ReadAhead, SampleRate ? atoi(SampleRate) : 44100),
+								 (uint32_t) MS2TS(Device->Config.ReadAhead, 44100),
 								 Crypto, Auth, Device->Config.RaopCredentials, password, Cipher, md, am,
-								 SampleRate ? atoi(SampleRate) : 44100,
-								 SampleSize ? atoi(SampleSize) : 16,
-								 Channels ? atoi(Channels) : 2,
+								 44100, 16, 2,
 								 Device->Volume);
+	LOG_INFO("AIRPLAY_OUTPUT wire_codec=AppleLossless encoder_requested=%s sample_rate=44100 bits=16 channels=2 receiver_acceptance=UNVERIFIED bit_perfect=UNVERIFIED",
+			 Device->Config.AlacEncode ? "ALAC" : "ALAC_RAW");
 
 	NFREE(password);
 	NFREE(am);
@@ -929,13 +955,15 @@ static bool IsExcluded(char* Model, char* Name) {
 	char* o = glIncludedNames;
 
 	if (*glIncludedNames) {
-		if (!Name) {
+		/* -o is documented as a model filter. Matching the PTR name here
+		 * silently excluded every HomePod when given AudioAccessory. */
+		if (!Model) {
 			if (strcasestr(glIncludedNames, "<NULL>")) return false;
 			else return true;
 		}
 		do {
 			sscanf(o, "%[^,]", item);
-			if (!strcmp(Name, item)) return false;
+			if (strcasestr(Model, item)) return false;
 			o += strlen(item);
 		} while (*o++);
 		return true;
@@ -1203,6 +1231,8 @@ static int ParseArgs(int argc, char **argv) {
 /*																			  */
 /*----------------------------------------------------------------------------*/
 int main(int argc, char *argv[]) {
+	setvbuf(stdout, NULL, _IOLBF, 0);
+	setvbuf(stderr, NULL, _IONBF, 0);
 	int i;
 	char resp[20] = "";
 	signal(SIGINT, sighandler);
@@ -1240,6 +1270,7 @@ int main(int argc, char *argv[]) {
 	int parsed = ParseArgs(argc, argv);
 	if (parsed < 0) exit(1);
 	else if (parsed > 0) exit(0);
+	if (!spotValidateQualityMode()) exit(2);
 
 	// make sure port range is correct
 	if (glPortBase && !glPortRange) glPortRange = MAX_RENDERERS*4;

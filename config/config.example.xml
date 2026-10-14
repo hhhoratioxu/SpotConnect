@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<spotraop>
+  <!-- Set only your own application credentials here, outside the Git checkout.
+       <client_id>YOUR_OWN_CLIENT_ID</client_id>
+       <client_secret>YOUR_OWN_CLIENT_SECRET</client_secret>
+       A Premium account or Web API token alone is not an authorized FLAC provider. -->
+  <common>
+    <enabled>1</enabled>
+    <alac_encode>1</alac_encode>
+    <read_ahead>1000</read_ahead>
+    <send_metadata>1</send_metadata>
+    <send_coverart>0</send_coverart>
+    <volume_feedback>1</volume_feedback>
+    <volume_mode>2</volume_mode>
+    <remove_timeout>120</remove_timeout>
+  </common>
+</spotraop>

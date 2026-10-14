@@ -24,6 +24,8 @@
 #include "SpircHandler.h"
 #include "TrackPlayer.h"
 #include "CSpotContext.h"
+#include "QualityPolicy.h"
+#include <cstdlib>
 #include "LoginBlob.h"
 #include "BellHTTPServer.h"
 #include "WrappedSemaphore.h"
@@ -91,6 +93,7 @@ public:
     std::atomic<TrackStatus> trackStatus = TRACK_INIT;
     inline static uint16_t portBase = 0, portRange = 1;
     inline static std::string username = "", password = "";
+    inline static cspot::QualityMode qualityMode = cspot::QualityMode::Legacy;
 
     CSpotPlayer(char* clientId, char* clientSecret, char* name, char* id, char *credentials, struct in_addr addr, AudioFormat audio, 
                 size_t frameSize, uint32_t delay, struct shadowPlayer* shadow);
@@ -434,6 +437,9 @@ void CSpotPlayer::runTask() {
 
         auto ctx = cspot::Context::createFromBlob(blob);
         ctx->config.audioFormat = format;
+        ctx->config.qualityMode = qualityMode;
+        ctx->config.requiredPcmSampleRate = 44100;
+        ctx->config.requiredPcmChannels = 2;
         ctx->config.clientId = clientId;
         ctx->config.clientSecret = clientSecret;
 
@@ -565,6 +571,24 @@ void spotOpen(uint16_t portBase, uint16_t portRange, char *username, char *passw
     if (password) CSpotPlayer::password = password;
 }
 
+int spotValidateQualityMode(void) {
+    fprintf(stderr, "HoriSpotConnect 0.1.0-preview.1 | Experimental | original upstream copyrights retained\n");
+    try {
+        const auto* mode = std::getenv("HORISPOT_QUALITY");
+        CSpotPlayer::qualityMode = mode ? cspot::parseQualityMode(mode) : cspot::QualityMode::Legacy;
+        if (CSpotPlayer::qualityMode == cspot::QualityMode::Lossless) {
+            fprintf(stderr, "SPOTIFY_FLAC_ACCESS_UNAVAILABLE: LOSSLESS requires an authorized Spotify FLAC provider; this Preview has none.\n");
+            return 0;
+        }
+        fprintf(stderr, "HORISPOT_QUALITY mode=%s spotify_flac_access=UNAVAILABLE\n",
+                cspot::qualityModeName(CSpotPlayer::qualityMode));
+        return 1;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "HORISPOT_QUALITY_ERROR %s\n", e.what());
+        return 0;
+    }
+}
+
 void spotClose(void) {
     delete static_cast<bell::BellLogger*>(bell::bellGlobalLogger);
     bell::bellGlobalLogger = nullptr;
@@ -575,6 +599,9 @@ struct spotPlayer* spotCreatePlayer(char* clientId, char* clientSecret, char* na
 
     if (oggRate == 320) format = AudioFormat_OGG_VORBIS_320;
     else if (oggRate == 96) format = AudioFormat_OGG_VORBIS_96;
+    if (CSpotPlayer::qualityMode == cspot::QualityMode::Auto ||
+        CSpotPlayer::qualityMode == cspot::QualityMode::Vorbis320)
+        format = AudioFormat_OGG_VORBIS_320;
 
     auto player = new CSpotPlayer(clientId, clientSecret, name, id, credentials, addr, format, frameSize, delay, shadow);
     if (player->startTask()) return (struct spotPlayer*) player;

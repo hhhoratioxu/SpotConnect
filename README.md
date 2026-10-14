@@ -76,7 +76,7 @@ AIRPLAY_OUTPUT 给出发送契约与请求编码，libraop 报告实际 ALAC/PCM
 
 上游自 2025-12 起在自编译版本中要求自己的 application Client ID 和 Client
 Secret 获取其 Web API token；将自己的信息只填入安装目录 state/config.xml
-的 <client_id> / <client_secret>，该文件权限为 0600。这些应用凭据不是 Premium
+的 `<client_id>` / `<client_secret>`，该文件权限为 0600。这些应用凭据不是 Premium
 账号的 Lossless 授权，也不能解锁 FLAC。缺少凭据时清晰报错，不发送占位符或
 打印秘密。
 

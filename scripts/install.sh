@@ -17,6 +17,27 @@ for hori_binary in HoriSpotConnect hori-discover hori-audio-probe hori-raop-prob
 done
 hori_home=${HORISPOT_HOME:-"$HOME/Library/Application Support/HoriSpotConnect"}
 hori_dest="$hori_home/versions/0.1.0-preview.1"
+# Stop only this owned installation before replacing an executable that may run.
+hori_existing_agent="${HORISPOT_AGENT_DIR:-$HOME/Library/LaunchAgents}/com.hhhoratioxu.HoriSpotConnect.plist"
+if [[ -f "$hori_existing_agent" ]]; then
+  launchctl bootout "gui/$(id -u)" "$hori_existing_agent" 2>/dev/null || true
+fi
+if [[ -f "$hori_home/state/bridge.pid" ]]; then
+  IFS= read -r hori_old_pid < "$hori_home/state/bridge.pid" || true
+  if [[ ${hori_old_pid:-} =~ ^[0-9]+$ ]]; then
+    hori_old_command=$(ps -p "$hori_old_pid" -o comm= 2>/dev/null || true)
+    if [[ "$hori_old_command" == "$hori_dest/bin/HoriSpotConnect" ]]; then
+      kill -TERM "$hori_old_pid" 2>/dev/null || true
+      for hori_attempt in {1..50}; do
+        if ! kill -0 "$hori_old_pid" 2>/dev/null; then break; fi
+        sleep 0.1
+      done
+      if kill -0 "$hori_old_pid" 2>/dev/null; then
+        echo "Previous HoriSpotConnect is still stopping; retry after it exits." >&2; exit 2
+      fi
+    fi
+  fi
+fi
 mkdir -p "$hori_dest" "$hori_home/state" "$hori_home/logs"
 chmod 700 "$hori_home" "$hori_home/state" "$hori_home/logs"
 for hori_item in bin scripts config licenses docs README.md CHANGELOG.md LICENSE SOURCE-MANIFEST.json SHA256SUMS; do

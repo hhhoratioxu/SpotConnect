@@ -1,0 +1,50 @@
+name: HoriSpotConnect macOS ARM64 Preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/spotify-lossless]
+    paths:
+      - macos/**
+      - spotraop/**
+      - common/cspot
+      - scripts/**
+      - .github/workflows/hori-macos-arm64.yml
+permissions:
+  contents: read
+concurrency:
+  group: hori-macos-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    if: github.repository == 'hhhoratioxu/SpotConnect'
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify architecture and scripts
+        shell: bash
+        run: |
+          test "$(uname -m)" = arm64
+          for script in scripts/*.sh; do bash -n "$script"; done
+      - name: Build and offline tests
+        shell: bash
+        run: bash scripts/build-macos.sh
+      - name: Address and UB checks
+        shell: bash
+        run: bash scripts/build-macos.sh --sanitize
+      - name: Package locally verified Preview
+        shell: bash
+        run: bash scripts/package-macos.sh
+      - name: Upload ARM64 package and test reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: HoriSpotConnect-macos-arm64-preview
+          path: |
+            dist/*.zip
+            dist/*.sha256
+            .hori-build/native/test-results.xml
+            .hori-build/native-asan/test-results.xml
+          if-no-files-found: error

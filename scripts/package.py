@@ -68,8 +68,10 @@ for path in root.rglob('*'):
                                  for part in path.relative_to(root).parts):
         continue
     if path.name.upper().startswith(('LICENSE', 'COPYING', 'COPYRIGHT', 'NOTICE')):
-        name = '__'.join(path.relative_to(root).parts)
-        shutil.copy2(path, licenses / name)
+        license_name = '__'.join(path.relative_to(root).parts)
+        if len(license_name.encode()) > 220:
+            license_name = license_name[:160] + '__' + hashlib.sha256(license_name.encode()).hexdigest()[:16]
+        shutil.copy2(path, licenses / license_name)
 flac_license = root / '.hori-build/flac-1.5.0/COPYING.Xiph'
 if not flac_license.exists():
     flac_license = Path(os.environ.get('HORI_FLAC_SOURCE', '')) / 'COPYING.Xiph'

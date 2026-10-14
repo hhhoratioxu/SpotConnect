@@ -35,6 +35,9 @@
 #include "cross_net.h"
 #include "cross_thread.h"
 #include "mdnssd.h"
+#ifdef __APPLE__
+#include "../../macos/HoriBonjour.h"
+#endif
 #include "mdnssvc.h"
 #include "http_fetcher.h"
 #include "raop_client.h"
@@ -461,10 +464,18 @@ static bool mDNSsearchCallback(mdnssd_service_t *slist, void *cookie, bool *stop
 
 
 /*----------------------------------------------------------------------------*/
+#ifdef __APPLE__
+static bool HoriDiscoveryRunning(void) { return glMainRunning; }
+#endif
 static void *mDNSsearchThread(void *args) {
 	// launch the query,
+#ifdef __APPLE__
+	hori_bonjour_query(glHost, glDiscovery ? DISCOVERY_TIME : 0,
+		&mDNSsearchCallback, NULL, HoriDiscoveryRunning);
+#else
 	mdnssd_query(glmDNSsearchHandle, "_raop._tcp.local", false,
 			   glDiscovery ? DISCOVERY_TIME : 0, &mDNSsearchCallback, NULL);
+#endif
 	return NULL;
 }
 
@@ -1023,10 +1034,12 @@ static bool Start(void) {
 	LOG_INFO("Binding to %s", inet_ntoa(glHost));
 
 	/* start the mDNS devices discovery thread */
+#ifndef __APPLE__
 	if ((glmDNSsearchHandle = mdnssd_init(false, glHost, true)) == NULL) {;
 		LOG_ERROR("Cannot start mDNS searcher", NULL);
 		return false;
 	}
+#endif
 
 	pthread_create(&glmDNSsearchThread, NULL, &mDNSsearchThread, NULL);
 
@@ -1046,7 +1059,9 @@ static bool Stop(void) {
 	LOG_INFO("terminate search thread ...", NULL);
 
 	// this forces an ongoing search to end
+#ifndef __APPLE__
 	mdnssd_close(glmDNSsearchHandle);
+#endif
 	pthread_join(glmDNSsearchThread, NULL);
 
 	LOG_INFO("flush renderers ...", NULL);

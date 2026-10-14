@@ -14,6 +14,33 @@ export HORISPOT_QUALITY="$hori_mode"
 if [[ ! -f "$hori_home/state/config.xml" ]]; then echo "Run install.sh first." >&2; exit 2; fi
 echo "HoriSpotConnect Preview | quality=$hori_mode | Spotify FLAC access=UNAVAILABLE" >&2
 echo "Connect device suffix: [HoriSpot]; HomePod delivery and bit-perfect require acceptance." >&2
+if [[ "$hori_mode" == LOSSLESS ]]; then
+  exec "$hori_version/bin/HoriSpotConnect" -Z -x "$hori_home/state/config.xml"
+fi
+hori_pid_file="$hori_home/state/bridge.pid"
+if [[ -f "$hori_pid_file" ]]; then
+  IFS= read -r hori_pid < "$hori_pid_file" || true
+  if [[ ${hori_pid:-} =~ ^[0-9]+$ ]]; then
+    hori_command=$(ps -p "$hori_pid" -o comm= 2>/dev/null || true)
+    if [[ "$hori_command" == */HoriSpotConnect || "$hori_command" == HoriSpotConnect ]]; then
+      hori_running_mode=$(cat "$hori_home/state/running.mode" 2>/dev/null || true)
+      if [[ "$hori_running_mode" == "$hori_mode" ]]; then
+        echo "HoriSpotConnect is already running (PID $hori_pid, $hori_mode)." >&2; exit 0
+      fi
+      # Explicit mode change: stop only the verified process from this state PID.
+      kill -TERM "$hori_pid"
+      for hori_attempt in {1..30}; do
+        if ! kill -0 "$hori_pid" 2>/dev/null; then break; fi
+        sleep 0.1
+      done
+      if kill -0 "$hori_pid" 2>/dev/null; then
+        echo "Previous bridge is still stopping; retry after it exits." >&2; exit 2
+      fi
+    fi
+  fi
+fi
+printf '%s\n' "$hori_mode" > "$hori_home/state/quality.mode"
+printf '%s\n' "$hori_mode" > "$hori_home/state/running.mode"
 hori_interface=${HORISPOT_INTERFACE:-}
 if [[ -z "$hori_interface" ]]; then
   "$hori_version/bin/hori-discover" --seconds 3 --match HomePod > "$hori_home/state/discovery.json"
@@ -27,4 +54,4 @@ if [[ -z "$hori_interface" ]]; then
 fi
 echo "Binding only this bridge to LAN interface: $hori_interface" >&2
 exec "$hori_version/bin/HoriSpotConnect" -Z -x "$hori_home/state/config.xml" \
-  -b "$hori_interface" -o AudioAccessory -N '%s [HoriSpot]' -r 320 -c alac
+  -b "$hori_interface" -p "$hori_pid_file" -o AudioAccessory -N '%s [HoriSpot]' -r 320 -c alac

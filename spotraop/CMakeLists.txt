@@ -79,6 +79,9 @@ endif()
 
 # Main target sources
 file(GLOB SOURCES src/*.cpp src/*.c ${BASE}/common/crosstools/src/*.c ${BASE}/spotraop/http-fetcher/src/*.c)
+if(APPLE)
+    list(APPEND SOURCES ${BASE}/macos/HoriBonjour.cpp)
+endif()
 list(APPEND EXTRA_INCLUDES src ${BASE}/common ${BASE}/spotraop/http-fetcher/include)
 add_executable(${PROJECT} ${SOURCES})
 

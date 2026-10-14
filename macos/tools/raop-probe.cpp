@@ -68,7 +68,8 @@ int main(int argc, char** argv) {
         if (pending.empty() || offset == pending.size()) { pending = pcm->read(); offset = 0; }
         if (pending.empty()) break;
         if (!raopcl_accept_frames(sender)) { std::this_thread::sleep_for(std::chrono::milliseconds(5)); continue; }
-        const auto count = std::min<std::size_t>(352, (pending.size() - offset) / 2);
+        const auto count = std::min<std::size_t>(
+            std::min<std::size_t>(352, (pending.size() - offset) / 2), 44100 * 3 - frames);
         std::vector<std::int16_t> quiet(count * 2);
         for (std::size_t i = 0; i < quiet.size(); ++i) quiet[i] = pending[offset + i] / 64;
         std::uint64_t playtime = 0;
@@ -85,8 +86,14 @@ int main(int argc, char** argv) {
               << (pcm ? "\"local_FLAC\"" : "\"none_connect_only\"")
               << ",\"wire_codec\":\"AppleLossless\",\"encoder_requested\":\"ALAC\",\"sample_rate\":44100,\"bits\":16,\"channels\":2,"
                  "\"frames_submitted\":" << frames
-              << ",\"samples_attenuated\":" << (pcm ? "true" : "false")
-              << ",\"spotify_flac_verified\":false,\"audible_output_verified\":false,\"bit_perfect_verified\":false}\n";
+              << ",\"samples_attenuated\":" << (pcm ? "true" : "false");
+    if (decoder) {
+      const auto& format = decoder->format();
+      std::cout << ",\"source_sample_rate\":" << format.sampleRate
+                << ",\"source_bits\":" << format.bitsPerSample
+                << ",\"source_channels\":" << format.channels;
+    }
+    std::cout << ",\"spotify_flac_verified\":false,\"audible_output_verified\":false,\"bit_perfect_verified\":false}\n";
     return 0;
   } catch (const std::exception& e) {
     if (sender) { raopcl_disconnect(sender); raopcl_destroy(sender); }

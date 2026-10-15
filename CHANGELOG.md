@@ -1,5 +1,21 @@
 # HoriSpotConnect changelog
 
+## Verification follow-up — 2026-10-15
+
+Documentation only; published Preview.2 binaries/tag remain unchanged.
+
+- Verify the real return from hotspot to the HomePod LAN: managed discovery,
+  renderer creation, Connect advertisement and ZeroConf getInfo recovered.
+- Record user target selection and silence; actual Connect session, metadata and
+  audio-key response passed, with OGG_VORBIS_320 selected in metadata.
+- Identify empty personal application credentials as the blocker before token/
+  CDN URL requests. Do not claim server rejection or received Spotify audio.
+- Repeat accepted HomePod ALAC session and 44,100-frame local FLAC submission;
+  receiver audibility remains UNVERIFIED because the user did not notice the tone.
+- Re-download public Preview.2; verify ZIP SHA-256, 140 file hashes, four strict
+  signatures and exact source references. Final hosted source run passed 48/48
+  native and 48/48 project-instrumented tests.
+
 ## 0.1.0-preview.2 — 2026-10-15
 
 Preview / Experimental. Spotify FLAC access remains unavailable.
@@ -15,7 +31,8 @@ Preview / Experimental. Spotify FLAC access remains unavailable.
 - Collect dependency licenses from Git-tracked source; exclude private test
   extractions and ignored runtime files from package inputs.
 - Add four isolated Bonjour lifecycle tests; execute 48 native and 48
-  project-instrumented checks. Physical HomePod reconnection remains UNVERIFIED.
+  project-instrumented checks. Physical HomePod reconnection was UNVERIFIED at
+  packaging; the later real follow-up is recorded above.
 
 ## 0.1.0-preview.1 — 2026-10-15
 

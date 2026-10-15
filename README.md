@@ -15,8 +15,9 @@ Home Assistant。不能把 Vorbis 转 ALAC、Spotify UI 的 Lossless 标签，�
 
 已完成 macOS ARM64 可执行桥接、独立 libFLAC 解码和 PCM 转换、严格音质模式、
 HomePod 发现、启动/安装/卸载脚本与用户级 LaunchAgent。当前会话完成了 HomePod 2
-RAOP 握手及原创本地 FLAC 的 PCM 发送；可听结果、Spotify 账号播放和控制验收
-仍标记 UNVERIFIED。
+RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，服务恢复发现，用户
+选中了 Connect 设备，真实账号会话、曲目元数据和音频密钥已取得。音乐下载因缺少
+个人应用凭据而 BLOCKED；可听结果与真实控制验收仍为 UNVERIFIED。
 
 ### 音质与支持矩阵
 
@@ -29,11 +30,12 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；可听结果、Spotify 账号�
 | 本地 FLAC | libFLAC 1.5.0；已测 16/24/32 位、mono/stereo、Seek、损坏/截断处理 |
 | Spotify FLAC 元数据 | 识别公开格式 ID 16/22；识别不等于能获取或播放 |
 | Spotify FLAC 源选择/访问 | 此客户端 UNAVAILABLE；没有 DRM/权限绕过或官方客户端密钥提取 |
-| HomePod 2 发现 | 此前 HomePod LAN 实测 PASS；当前热点未发现目标设备 |
-| Connect 服务与设备信息 | 此前注册与 ZeroConf 接口 PASS；解锁后已检查 UI，热点下目标缺席 |
-| RAOP 输出 | 此前实测 HomePod 接受 AppleLossless/ALAC 会话，44.1 kHz / 16-bit / stereo |
+| HomePod 2 发现与网络恢复 | 返回共同局域网后恢复发现和 renderer 创建，实测 PASS |
+| Connect 服务与设备信息 | 注册与 ZeroConf 接口 PASS；用户已手动选中目标设备 |
+| Spotify Connect 账号会话 | PASS；取得真实曲目元数据和音频密钥，元数据选中 Vorbis 320 |
+| RAOP 输出 | 返回局域网后再次实测 HomePod 接受 ALAC 会话，44.1 kHz / 16-bit / stereo |
 | 本地 FLAC → PCM → RAOP | 实际提交 44,100 帧；低幅度测试，可听输出 UNVERIFIED |
-| Spotify → HomePod 音乐 | UNVERIFIED；账号授权、个人 Client ID/Secret 尚未配置验证 |
+| Spotify → HomePod 音乐 | BLOCKED；个人 Client ID/Secret 为空，未发 token/CDN 请求，用户报告无声 |
 | 暂停 / Seek / 切歌 / 音量 | 控制路径保留；离线 Seek 测试 PASS，真实 Spotify 控制 UNVERIFIED |
 | 长时间连续播放 | UNVERIFIED |
 | HomePod 端到端 bit-perfect | UNVERIFIED；24→16 位和重采样会改变样本 |
@@ -79,10 +81,19 @@ Preview.2 检测绑定地址失效后清理连接，登录启动项以 30 秒节
 方式登录。没有复制官方应用的令牌、密码或私钥。
 
 上游自 2025-12 起在自编译版本中要求自己的 application Client ID 和 Client
-Secret 获取其 Web API token；将自己的信息只填入安装目录 state/config.xml
+Secret 获取其 Web API token（[上游说明](https://github.com/philippe44/SpotConnect/blob/master/README.md)）。
+这组凭据标识开发者应用，Spotify 会员账号通过 Connect 登录是另一个环节。将自己的信息只填入安装目录 state/config.xml
 的 `<client_id>` / `<client_secret>`，该文件权限为 0600。这些应用凭据不是 Premium
 账号的 Lossless 授权，也不能解锁 FLAC。缺少凭据时清晰报错，不发送占位符或
 打印秘密。
+
+当前真实测试已完成 Connect 账号会话和元数据/音频密钥请求；程序在缺少应用凭据
+时停止于下载地址获取前。尚未取得 Spotify 音频字节，不能把元数据选择记为解码
+成功。应用可在 [Spotify 官方后台](https://developer.spotify.com/dashboard) 查看；新建
+应用涉及开发者条款和凭据创建，需由账号所有者确认。2026 年新的 Development Mode
+还有 Premium、单个 Client ID 和接口范围限制，详见
+[官方更新](https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security)。
+补齐凭据后仍须验证当前服务是否允许下载，不能保证 Vorbis 或 FLAC 访问。
 
 已核查最新源码/Issues/PR，见 [上游审计](docs/UPSTREAM-AUDIT.md)。SpotConnect
 维护者尚无实现 Lossless 的计划；librespot 维护者报告 Spotify 技术保护限制。
@@ -130,18 +141,23 @@ Mono duplication, bit-depth reduction and resampling are reported separately.
 
 On the tested HomePod 2, discovery and RAOP session acceptance succeeded. An
 original local 24-bit FLAC supplied 44,100 PCM frames to the real ALAC/RAOP sender,
-with deliberate attenuation for the short test. Audible output, Spotify Premium
-playback, and controls remain **UNVERIFIED**. After the Mac was unlocked, the
-official Spotify device picker was inspected: the phone and this computer were
-available, while the HomePod bridge was absent on the current personal hotspot.
-No bridge login or music source was obtained. Personal application credentials
-were not supplied. The phone's Lossless badge is not bridge source evidence.
+with deliberate attenuation for the short test. Receiver audibility and real
+controls remain **UNVERIFIED**. After the user returned from a personal hotspot
+to the HomePod LAN, the managed bridge recovered discovery and its Connect
+advertisement. The user selected the target and reported silence. The real
+Connect account session, track metadata and audio-key response succeeded;
+AUTO selected OGG_VORBIS_320 in metadata. Music download is **BLOCKED** by empty
+personal application credentials: no token or CDN URL request was sent, and no
+Spotify audio bytes or decoder source format were obtained. This is not a server
+denial or a successful playback test. Application credentials do not grant FLAC
+rights or guarantee access under current Development Mode restrictions.
 
 Preview.2 detects a disappeared bind address and cleans up before the user
 LaunchAgent retries discovery, with a 30-second throttle. Manual startup validates
 its interface/address and preserves LaunchAgent management when changing modes.
 The 48-test native and instrumented suites include four isolated Bonjour lifecycle
-tests. No physical network switching or HomePod reconnection is inferred from them.
+tests. The separate real return-to-LAN observation confirms this recovery case;
+it does not prove extended streaming stability or every network-change scenario.
 
 Use the install commands above or scripts/build-macos.sh. Installation is user-only,
 verifies hashes and ad-hoc signatures, and adds a user LaunchAgent. Runtime secrets

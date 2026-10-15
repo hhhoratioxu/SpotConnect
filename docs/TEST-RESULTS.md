@@ -16,17 +16,21 @@
 | ZeroConf HTTP getInfo | PASS | Returned status 101 / OK and actual receiver name |
 | HomePod RAOP session | PASS | Accepted 44.1kHz/16-bit/stereo AppleLossless session |
 | Local FLAC → PCM → RAOP | PASS for sender submission | Original 24-bit fixture, 44,100 frames; low amplitude test |
-| Actual audible output | UNVERIFIED | No manual/acoustic receiver confirmation |
-| Spotify UI device picker | CHECKED; target selection BLOCKED | After unlock, phone/computer available; target HomePod absent on hotspot |
+| Actual audible output | UNVERIFIED | User did not notice the quiet local tone; no positive manual/acoustic confirmation |
+| Spotify UI device picker | PASS for manual selection | User selected the HoriSpot target after returning to the HomePod LAN and reported silence |
 | Bind disappearance / query shutdown | 4/4 PASS | Process-local simulated interface loss and real scoped Bonjour query; no system network changes |
+| Physical return to HomePod LAN | PASS for this recovery case | Existing managed service recovered native discovery, renderer creation and Connect advertisement |
+| Spotify Connect account session | PASS | Real metadata and audio-key response received; no secret values published |
+| Real Spotify format selection | PASS for metadata selection | AUTO chose OGG_VORBIS_320; this is not a decoder/received-audio result |
 | Premium / current FLAC permission | UNVERIFIED | Account-specific authorized FLAC source not tested |
-| Real Spotify Vorbis playback | UNVERIFIED | Personal application credentials and UI pairing not completed |
+| Real Spotify Vorbis playback | BLOCKED before audio download | Own application Client ID/Secret empty; no token or CDN URL request sent; track load timed out |
 | Real Spotify FLAC source/decode | UNVERIFIED / unavailable in this client | Local fixtures are not Spotify evidence |
 | Real pause / seek / next / volume | UNVERIFIED | Offline seek passed; real controller sequence outstanding |
 | Continuous stream stability | UNVERIFIED | Short local submission is not extended playback evidence |
 | HomePod end-to-end bit-perfect | UNVERIFIED | Source encoding differs from conversion and receiver processing |
 | Developer ID / notarization | UNVERIFIED | Ad-hoc signatures only |
-| GitHub hosted workflow | Recorded at delivery | Workflow code or a queued job is not an executed build |
+| GitHub hosted workflow | PASS at released 872af59 | Run 38660172218 actually executed native 48/48, instrumented 48/48, packaging and upload |
+| Re-downloaded public Preview.2 | PASS | ZIP SHA-256, 140 file hashes, exact source/submodule manifest and four strict signatures |
 
 Assertions are active in optimized builds. Fixtures originate as original PCM,
 are encoded with libFLAC's verification mode, and are compared sample for sample
@@ -45,5 +49,7 @@ saturation and one-LSB bounds. Fixtures are original CC0-1.0 audio.
 Raw live logs are in local ignored private-test-results/. Public reports contain
 technical outcomes only. Packaged JUnit XML records offline names and timings.
 
-The unlocked UI follow-up is recorded in [LIVE-VALIDATION.md](LIVE-VALIDATION.md).
-It does not upgrade account playback, source-format or HomePod audibility gates.
+The hotspot inspection and subsequent real LAN/account follow-up are recorded in
+[LIVE-VALIDATION.md](LIVE-VALIDATION.md). Account session and metadata selection
+have evidence; actual Spotify audio download, decoding, music output, controls
+and HomePod audibility do not yet pass.

@@ -33,16 +33,17 @@ Package ZIP hashes are in the accompanying .sha256 file; embedding a ZIP's own h
 inside itself would be self-referential. SOURCE-MANIFEST.json identifies exact source
 and submodule commits. This is a Preview, not a Spotify Lossless-certified release.
 
-Preview.2 follow-up: the Mac was unlocked and the real Spotify picker inspected.
-The current personal hotspot has no observed HomePod service. Four additional
+Preview.2 packaging-time follow-up: the Mac was unlocked and the real Spotify
+picker inspected. That personal hotspot had no observed HomePod service. Four additional
 process-local Bonjour lifecycle tests pass in both builds. Receiver reconnection
-after a physical network change remains UNVERIFIED; see LIVE-VALIDATION.md.
+was UNVERIFIED at packaging; the later real LAN follow-up is recorded below and
+in LIVE-VALIDATION.md.
 
 - Preview.2 fresh extraction: file hashes and four strict signatures PASS.
 - Isolated installation in a path containing spaces, local 24-bit FLAC decoding,
   explicit LOSSLESS refusal, private permissions and recoverable uninstall PASS.
 - Real upgrade and live reinstallation PASS; LaunchAgent/native process running
-  on the current hotspot. Repeated AUTO startup kept the PID. VORBIS_320/AUTO
+  on the hotspot at that time. Repeated AUTO startup kept the PID. VORBIS_320/AUTO
   switches kept agent management and graceful shutdown. No physical music test
   is inferred from those mode changes.
 - Missing-interface exit 75 and LOSSLESS exit 2 retained the running AUTO service.
@@ -59,3 +60,27 @@ after a physical network change remains UNVERIFIED; see LIVE-VALIDATION.md.
 - Package privacy regression PASS: an ignored private file with a license-like
   name and unique marker was excluded. The package retained 118 Git-source and
   libFLAC license files, with no private test extraction paths among its inputs.
+
+## Public release and real LAN follow-up
+
+- Exact released source 872af596a1394dbfa94339b375e604526506eaf8 passed
+  [hosted run 38660172218](https://github.com/hhhoratioxu/SpotConnect/actions/runs/38660172218):
+  48 native / 48 project-instrumented tests, packaging and artifact upload executed.
+- Preview.2 was downloaded again from the public GitHub release. ZIP SHA-256:
+  `99cb32d5bdbcb2ebdd243f0304b41b4a08f892f7c5f9fade4fb9b2ba5b1a1504`.
+  Fresh extraction verified 140 file hashes, four strict ad-hoc signatures, the
+  exact released commit and cspot 16180c8c7999c3d80b6ae967d089b3822f96d927.
+  The published tag and assets were not replaced for this documentation update.
+- The user returned the Mac to the HomePod LAN. The existing managed installation
+  recovered HomePod discovery, renderer creation and Connect service publication.
+  A fresh ZeroConf getInfo returned status 101 / OK. This is an actual recovery
+  observation, separate from process-local tests and extended stability testing.
+- After the user manually selected the HoriSpot device, the real account session,
+  metadata and audio-key response succeeded. AUTO selected OGG_VORBIS_320 in
+  metadata. The user reported no music. Empty application credentials prevented
+  token/CDN URL requests; no Spotify audio bytes reached a decoder. Music playback
+  remains BLOCKED, not a successful Vorbis or FLAC result and not a server denial.
+- The real HomePod again accepted ALAC, 44.1kHz / 16-bit / stereo. A new original
+  local 24-bit FLAC submission supplied 44,100 attenuated frames. The user did not
+  notice the quiet test, so audibility remains UNVERIFIED. The test is local audio,
+  not Spotify source or end-to-end bit-perfect evidence.

@@ -126,3 +126,19 @@ in LIVE-VALIDATION.md.
   no bit-perfect, stability or Spotify Lossless success follows from these stats.
 - The verified Preview.3 ZIP was separately scanned for the actual private app
   credentials: zero matches. Values remain only in the protected local config.
+
+
+## Published Preview.3 artifact verification
+
+The diagnostic Preview was published with the explicit title "Audio diagnostics /
+music still silent" and a failed audible-music acceptance note. It is not a formal
+playback or Lossless release. The public tag resolves directly to executable code
+a692eeaaf75532dc3d33b00e367090909488a00b.
+
+The ZIP and its sidecar were downloaded again from the public
+[Preview.3 release](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.3).
+The published ZIP matched SHA-256
+`48288531a9f3055ad20e2ac04616187d2dbaff1f7edf5cfc76fa7b6f8dc1a48e`.
+Fresh extraction verified all 141 file hashes, four strict ad-hoc signatures,
+source a692eea and core 16180c8. Preview.2 release notes gained a dated account/LAN
+follow-up; its tag, executable and assets were retained.

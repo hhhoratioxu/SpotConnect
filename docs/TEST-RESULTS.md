@@ -36,7 +36,7 @@
 | HomePod end-to-end bit-perfect | UNVERIFIED | Source encoding differs from conversion and receiver processing |
 | Developer ID / notarization | UNVERIFIED | Ad-hoc signatures only |
 | GitHub hosted workflow | PASS at Preview.3 source a692eea | [Run 38683473524](https://github.com/hhhoratioxu/SpotConnect/actions/runs/38683473524) executed native 52/52, instrumented 52/52, packaging and artifact upload |
-| Re-downloaded public Preview.2 | PASS | ZIP SHA-256, 140 file hashes, exact source/submodule manifest and four strict signatures |
+| Re-downloaded public Previews | PASS | Preview.2: 140 hashes; Preview.3: 141 hashes; each ZIP SHA-256, exact source/submodule manifest and four strict signatures verified |
 
 Assertions are active in optimized builds. Fixtures originate as original PCM,
 are encoded with libFLAC's verification mode, and are compared sample for sample

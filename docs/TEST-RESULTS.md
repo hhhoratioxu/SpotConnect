@@ -8,7 +8,8 @@
 | ARM64 native compilation | PASS | AppleClang 21 / C++20, bridge and diagnostics |
 | Complete offline suite | 48/48 PASS | 28 FLAC/policy/PCM + 16 cspot metadata/CDN/AES/Vorbis + 4 Bonjour lifecycle tests |
 | Address + UB instrumentation | 48/48 PASS | Project source instrumented; precompiled dependency archives not instrumented |
-| Shell and package checks | See DELIVERY-VERIFICATION.md | Syntax, installation, re-extraction, hashes, signatures |
+| Shell and package checks | PASS | Syntax, isolated/live installation, re-extraction, hashes, signatures |
+| LaunchAgent / mode lifecycle | PASS | Idempotent AUTO, VORBIS_320/AUTO switches, refusal gates and live reinstall; no music playback implied |
 | HomePod 2 discovery | PASS | Actual LAN receiver; raw name/IP kept outside Git |
 | Bridge renderer creation | PASS | Actual HomePod renderer and ALAC encoder created |
 | Connect advertisement | PASS | Actual _spotify-connect._tcp service observed |

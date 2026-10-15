@@ -37,3 +37,22 @@ Preview.2 follow-up: the Mac was unlocked and the real Spotify picker inspected.
 The current personal hotspot has no observed HomePod service. Four additional
 process-local Bonjour lifecycle tests pass in both builds. Receiver reconnection
 after a physical network change remains UNVERIFIED; see LIVE-VALIDATION.md.
+
+- Preview.2 fresh extraction: file hashes and four strict signatures PASS.
+- Isolated installation in a path containing spaces, local 24-bit FLAC decoding,
+  explicit LOSSLESS refusal, private permissions and recoverable uninstall PASS.
+- Real upgrade and live reinstallation PASS; LaunchAgent/native process running
+  on the current hotspot. Repeated AUTO startup kept the PID. VORBIS_320/AUTO
+  switches kept agent management and graceful shutdown. No physical music test
+  is inferred from those mode changes.
+- Missing-interface exit 75 and LOSSLESS exit 2 retained the running AUTO service.
+- Updated native Bonjour static analysis reported zero diagnostics. Shell syntax
+  and whitespace checks passed.
+- Explicit interface handoff to the managed process PASS; the private request was
+  consumed once and later AUTO startup used automatic selection. Unsupported
+  loopback selection failed before stopping the existing service.
+- Native recovery code at f6e3beafaeca2154c60ce03748e15df204de25cf passed the executed
+  [hosted ARM64 workflow](https://github.com/hhhoratioxu/SpotConnect/actions/runs/38658723934),
+  including 48 native / 48 instrumented tests, package and artifact upload. Later
+  launcher verification is covered by the local lifecycle checks above; final
+  release workflow evidence is recorded in its release notes.

@@ -33,8 +33,8 @@ if [[ -z "$hori_interface" ]]; then
   hori_interface=$(/usr/sbin/networksetup -listallhardwareports | awk '/Hardware Port: Wi-Fi/{getline; print $2; exit}')
 fi
 hori_ipv4=$(/usr/sbin/ipconfig getifaddr "$hori_interface" 2>/dev/null || true)
-if [[ -z "$hori_interface" || -z "$hori_ipv4" ]]; then
-  echo "HORI_LAN_UNAVAILABLE: selected interface has no IPv4 address; retry when the HomePod LAN is connected." >&2; exit 75
+if [[ -z "$hori_interface" || -z "$hori_ipv4" || "$hori_ipv4" == 127.* || "$hori_ipv4" == 0.0.0.0 ]]; then
+  echo "HORI_LAN_UNAVAILABLE: selected interface has no usable LAN IPv4 address; retry when the HomePod LAN is connected." >&2; exit 75
 fi
 hori_pid_file="$hori_home/state/bridge.pid"
 hori_restart_agent=false

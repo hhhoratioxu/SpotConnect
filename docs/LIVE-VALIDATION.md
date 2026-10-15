@@ -36,6 +36,26 @@ explicit stop, and bounded completion. The 48 native and 48 project-instrumented
 checks pass. These simulations do not verify physical network switching or actual
 HomePod reconnection; that acceptance gate remains **UNVERIFIED**.
 
+The extracted Preview.2 package passed its file hashes and all four strict ad-hoc
+signature checks. Installation into a separate path containing spaces passed;
+state permissions were 0700 and config permissions 0600. Its original local
+24-bit FLAC fixture decoded to 44,100 PCM frames. LOSSLESS refused with exit 2.
+Uninstall moved that test installation to recoverable Trash.
+
+The user's existing installation was upgraded and the real LaunchAgent entered
+running state on the current hotspot. Repeated AUTO startup retained the same
+native PID. Explicit VORBIS_320 and AUTO changes each produced a new native PID
+managed by the same agent, after graceful cleanup. LOSSLESS and a nonexistent
+interface refused with exits 2 and 75 respectively without stopping the managed
+AUTO process. A second live installation also passed. No HomePod Connect target
+was advertised on the hotspot. These are lifecycle checks, not music playback.
+
+The explicit current LAN interface was also passed through a managed mode change;
+the next native process used it and consumed the private one-time request. A later
+AUTO start resumed automatic selection. A loopback override was rejected before
+stopping the existing service, because the upstream RAOP bridge requires a usable
+LAN address. These checks did not change any system interface.
+
 用户解锁后已实际打开 Spotify Connect 列表；热点环境下没有 HoriSpot HomePod 目标。
 iPhone 的 Lossless 标签不能证明桥接客户端取得 FLAC。未进行桥接账号登录和歌曲
 播放，因此不会把播放、Seek、切歌、音量或可听输出记为通过。此前在 HomePod LAN

@@ -26,16 +26,16 @@
 | Own application setup / token | PASS | Owner confirmed creation/terms; private 0600 config; token HTTP 200, lifetime 3600s; bridge independently fetched a token |
 | Real Spotify CDN / Vorbis decoder | PASS | Signed CDN URL received, actual bytes opened by Vorbis decoder; OGG_VORBIS_320 / 44100 Hz / stereo / 16-bit PCM |
 | Premium / current FLAC permission | UNVERIFIED | Account-specific authorized FLAC source not tested |
-| Real Spotify → HomePod music | FAIL for audible output | Initial missing-credentials blocker resolved; second user-selected playback decoded but user still heard no music |
+| Real Spotify → HomePod music | FAIL for audible output | Latest installed Preview.3 produced 28 PCM reports / 1,241,856 submitted frames, but the user again heard no music |
 | ALAC / raw ALAC local probes | PASS for bounded sender / timing | Each supplied 132,300 original local frames; five NTP reply logs each; no observed audio socket errors; audibility unconfirmed |
 | Exact ALAC sample roundtrip | 4/4 PASS | Same linked encoders plus Apple's reference decoder; signed extrema, independent stereo, full/short packets, zero padding |
-| Credential privacy | PASS | 74,283 tracked files, runtime logs and public Preview.2 scanned; no app credential matches; no values/token output |
+| Credential privacy | PASS | 74,283 tracked files, runtime logs, public Preview.2 and the verified Preview.3 package scanned; no app credential matches; no values/token output |
 | Real Spotify FLAC source/decode | UNVERIFIED / unavailable in this client | Local fixtures are not Spotify evidence |
 | Real pause / seek / next / volume | UNVERIFIED | Offline seek passed; real controller sequence outstanding |
 | Continuous stream stability | UNVERIFIED | Short local submission is not extended playback evidence |
 | HomePod end-to-end bit-perfect | UNVERIFIED | Source encoding differs from conversion and receiver processing |
 | Developer ID / notarization | UNVERIFIED | Ad-hoc signatures only |
-| GitHub hosted workflow | PASS at released Preview.2 / 872af59 | Run 38660172218 actually executed native 48/48, instrumented 48/48, packaging and upload; newer code is reported separately |
+| GitHub hosted workflow | PASS at Preview.3 source a692eea | [Run 38683473524](https://github.com/hhhoratioxu/SpotConnect/actions/runs/38683473524) executed native 52/52, instrumented 52/52, packaging and artifact upload |
 | Re-downloaded public Preview.2 | PASS | ZIP SHA-256, 140 file hashes, exact source/submodule manifest and four strict signatures |
 
 Assertions are active in optimized builds. Fixtures originate as original PCM,
@@ -59,3 +59,10 @@ The hotspot inspection and subsequent real LAN/account follow-up are recorded in
 [LIVE-VALIDATION.md](LIVE-VALIDATION.md). Account session, actual download and
 Vorbis decoding have evidence. Receiver music output failed the user's audible
 check; real controls and sustained playback still require acceptance.
+
+Preview.3 real-song diagnostics: 28 consecutive submission reports reached
+1,241,856 frames (about 28.16 seconds), with nonzero signed 16-bit samples, an
+active session and sender sanity true. The receiver answered 14 timing exchanges
+and no audio socket send error was observed. Submission counters describe the
+sender API, not receiver decoding or acoustic output; the user explicitly
+reported silence. A later Mercury read error and reset leave stability unaccepted.

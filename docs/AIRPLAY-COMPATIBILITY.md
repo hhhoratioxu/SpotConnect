@@ -47,3 +47,10 @@ HomePod access-control change or persistent system service was installed.
 确认无声。OS 27 播放时钟修复提供了新的排查方向；目前没有把这个候选原因说成
 已确认根因，也没有把另一个发送库的握手说成可听播放通过。PTP 管理员权限和真实
 可听输出仍须独立验证。Spotify FLAC 访问仍未实现。
+
+
+The installed Preview.3 real-song retest produced 1,241,856 nonzero-containing
+PCM frames over 28 reports while the sender stayed in streaming/sane state.
+Fourteen receiver timing replies and no observed audio socket errors accompanied
+this run. The user again reported silence. The compatibility hypothesis remains
+unconfirmed: sender-side counters cannot establish a receiver render timeline.

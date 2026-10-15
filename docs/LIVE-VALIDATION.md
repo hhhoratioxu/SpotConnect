@@ -148,3 +148,27 @@ buffered local PCM and acknowledged START, then disconnected with exit 0. It was
 not integrated into the bridge and does not prove audible music. PTP clock mode
 requires UDP 319/320; direct unprivileged binds returned EACCES. System networking
 and device access settings were not changed. See AIRPLAY-COMPATIBILITY.md.
+
+
+## Installed Preview.3 and real-song PCM
+
+The user selected the installed Preview.3 target and played again, then reported
+silence. The actual Spotify source remained OGG_VORBIS_320 / 44100 Hz / stereo /
+16-bit decoded PCM. Across 28 reporting intervals, the sender accepted 1,241,856
+frames (about 28.16 seconds). The PCM contained nonzero samples; session state
+was streaming and sender sanity remained true. The receiver answered 14 timing
+exchanges. No audio socket send error was observed in the diagnostic interval.
+A later Mercury read error/reset occurred, so sustained playback is unaccepted.
+
+These facts narrow the problem beyond initial account/token/download setup.
+They do not prove UDP receipt, receiver decoding, valid render timing or audible
+sound. The user-facing music check remains **FAIL**, including this Preview.3
+attempt. No Spotify FLAC data was requested or decoded.
+
+Exact Preview.3 source a692eeaaf75532dc3d33b00e367090909488a00b passed the executed
+[hosted ARM64 workflow](https://github.com/hhhoratioxu/SpotConnect/actions/runs/38683473524):
+52 native tests, 52 project-instrumented tests, packaging and artifact upload.
+Fresh local extraction verified 141 file hashes and four strict ad-hoc signatures.
+Isolated installation, original 24-bit FLAC decode, explicit LOSSLESS refusal and
+recoverable uninstall passed. A known-values scan found no application credentials
+in the Preview.3 package.

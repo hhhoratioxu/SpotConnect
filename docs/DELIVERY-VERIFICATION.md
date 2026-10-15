@@ -108,3 +108,21 @@ in LIVE-VALIDATION.md.
 - Two fresh local 3-second ALAC/ALAC_RAW probes each supplied 132,300 attenuated
   frames, received receiver timing exchanges and had no observed audio send errors.
   The user did not notice them; no audible pass is recorded.
+
+
+- Exact Preview.3 code a692eeaaf75532dc3d33b00e367090909488a00b passed
+  [hosted run 38683473524](https://github.com/hhhoratioxu/SpotConnect/actions/runs/38683473524),
+  including 52 native / 52 project-instrumented tests, packaging and artifact upload.
+- Preview.3 local ZIP SHA-256:
+  `48288531a9f3055ad20e2ac04616187d2dbaff1f7edf5cfc76fa7b6f8dc1a48e`.
+  Fresh extraction verified 141 file hashes, four strict ad-hoc signatures and the
+  exact code/core manifest. Isolated installation in a path containing spaces,
+  local decode, LOSSLESS refusal and recoverable uninstall passed. The real
+  installation upgraded while preserving its private application credentials.
+- The latest user-selected Preview.3 music attempt reached 1,241,856 submitted PCM
+  frames over 28 reports, with nonzero samples and streaming/sane state. Fourteen
+  timing replies and no observed audio socket errors are sender/network evidence.
+  The user explicitly reported no sound. Receiver music acceptance remains FAIL;
+  no bit-perfect, stability or Spotify Lossless success follows from these stats.
+- The verified Preview.3 ZIP was separately scanned for the actual private app
+  credentials: zero matches. Values remain only in the protected local config.

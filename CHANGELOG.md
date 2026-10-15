@@ -12,6 +12,8 @@ Preview / Experimental. Spotify FLAC access remains unavailable.
 - Validate the current interface/address before idempotent startup and retain
   LaunchAgent management on explicit mode changes.
 - Restrict PID-based termination to this installation's executable paths.
+- Collect dependency licenses from Git-tracked source; exclude private test
+  extractions and ignored runtime files from package inputs.
 - Add four isolated Bonjour lifecycle tests; execute 48 native and 48
   project-instrumented checks. Physical HomePod reconnection remains UNVERIFIED.
 

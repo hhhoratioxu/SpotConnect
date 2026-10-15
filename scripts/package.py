@@ -63,9 +63,13 @@ manifest['libFLAC'] = {'version': '1.5.0',
 
 licenses = package / 'licenses'
 licenses.mkdir()
-for path in root.rglob('*'):
-    if not path.is_file() or any(part.startswith('.') or part.startswith('build') or part == 'dist'
-                                 for part in path.relative_to(root).parts):
+tracked_files = subprocess.check_output(
+    ['git', 'ls-files', '--recurse-submodules', '-z'], cwd=root).decode().split('\0')
+for relative in tracked_files:
+    path = root / relative
+    # Only corresponding-source license files may enter the public package.
+    # Ignored runtime state and prior test extractions are never source inputs.
+    if not relative or not path.is_file():
         continue
     if path.name.upper().startswith(('LICENSE', 'COPYING', 'COPYRIGHT', 'NOTICE')):
         license_name = '__'.join(path.relative_to(root).parts)

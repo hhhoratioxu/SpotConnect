@@ -56,3 +56,6 @@ after a physical network change remains UNVERIFIED; see LIVE-VALIDATION.md.
   including 48 native / 48 instrumented tests, package and artifact upload. Later
   launcher verification is covered by the local lifecycle checks above; final
   release workflow evidence is recorded in its release notes.
+- Package privacy regression PASS: an ignored private file with a license-like
+  name and unique marker was excluded. The package retained 118 Git-source and
+  libFLAC license files, with no private test extraction paths among its inputs.

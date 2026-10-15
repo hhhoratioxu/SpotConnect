@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | Core/fork/source audit | PASS | Live GitHub API and local Git; exact hashes in UPSTREAM-AUDIT.md |
 | ARM64 native compilation | PASS | AppleClang 21 / C++20, bridge and diagnostics |
-| Complete offline suite | 44/44 PASS | 28 FLAC/policy/PCM + 16 actual cspot metadata/CDN/AES/Vorbis tests |
-| Address + UB instrumentation | 44/44 PASS | Project source instrumented; precompiled dependency archives not instrumented |
+| Complete offline suite | 48/48 PASS | 28 FLAC/policy/PCM + 16 cspot metadata/CDN/AES/Vorbis + 4 Bonjour lifecycle tests |
+| Address + UB instrumentation | 48/48 PASS | Project source instrumented; precompiled dependency archives not instrumented |
 | Shell and package checks | See DELIVERY-VERIFICATION.md | Syntax, installation, re-extraction, hashes, signatures |
 | HomePod 2 discovery | PASS | Actual LAN receiver; raw name/IP kept outside Git |
 | Bridge renderer creation | PASS | Actual HomePod renderer and ALAC encoder created |
@@ -16,7 +16,8 @@
 | HomePod RAOP session | PASS | Accepted 44.1kHz/16-bit/stereo AppleLossless session |
 | Local FLAC → PCM → RAOP | PASS for sender submission | Original 24-bit fixture, 44,100 frames; low amplitude test |
 | Actual audible output | UNVERIFIED | No manual/acoustic receiver confirmation |
-| Spotify UI device picker | UNVERIFIED | Mac locked; native UI unavailable |
+| Spotify UI device picker | CHECKED; target selection BLOCKED | After unlock, phone/computer available; target HomePod absent on hotspot |
+| Bind disappearance / query shutdown | 4/4 PASS | Process-local simulated interface loss and real scoped Bonjour query; no system network changes |
 | Premium / current FLAC permission | UNVERIFIED | Account-specific authorized FLAC source not tested |
 | Real Spotify Vorbis playback | UNVERIFIED | Personal application credentials and UI pairing not completed |
 | Real Spotify FLAC source/decode | UNVERIFIED / unavailable in this client | Local fixtures are not Spotify evidence |
@@ -42,3 +43,6 @@ saturation and one-LSB bounds. Fixtures are original CC0-1.0 audio.
 
 Raw live logs are in local ignored private-test-results/. Public reports contain
 technical outcomes only. Packaged JUnit XML records offline names and timings.
+
+The unlocked UI follow-up is recorded in [LIVE-VALIDATION.md](LIVE-VALIDATION.md).
+It does not upgrade account playback, source-format or HomePod audibility gates.

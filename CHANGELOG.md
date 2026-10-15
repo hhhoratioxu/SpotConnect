@@ -1,5 +1,20 @@
 # HoriSpotConnect changelog
 
+## 0.1.0-preview.2 — 2026-10-15
+
+Preview / Experimental. Spotify FLAC access remains unavailable.
+
+- Inspect the unlocked official Spotify device picker; record the absent HomePod
+  target on the current personal hotspot without treating the phone's Lossless
+  badge as bridge evidence.
+- Detect a disappeared native Bonjour bind address and cleanly end the bridge;
+  let the user LaunchAgent retry discovery with its existing 30-second throttle.
+- Validate the current interface/address before idempotent startup and retain
+  LaunchAgent management on explicit mode changes.
+- Restrict PID-based termination to this installation's executable paths.
+- Add four isolated Bonjour lifecycle tests; execute 48 native and 48
+  project-instrumented checks. Physical HomePod reconnection remains UNVERIFIED.
+
 ## 0.1.0-preview.1 — 2026-10-15
 
 Preview / Experimental. Genuine Spotify FLAC access remains unavailable.

@@ -58,7 +58,7 @@ cmake -S "$hori_root/macos" -B "$hori_build" -G Ninja \
   -DCMAKE_PREFIX_PATH="$hori_prefix" -DHORI_SANITIZE="$hori_sanitize" \
   -DBELL_EXTERNAL_MBEDTLS="$hori_root/common/libmbedtls" -DMBEDTLS_RELEASE=RELEASE
 cmake --build "$hori_build" --target spotraop-macos-arm64-static hori-discover \
-  hori-audio-probe hori-raop-probe audio-tests hori-native-tests --parallel 8
+  hori-audio-probe hori-raop-probe audio-tests hori-native-tests hori-network-tests --parallel 8
 ctest --test-dir "$hori_build" --output-on-failure --no-tests=error \
   --output-junit "$hori_build/test-results.xml"
 echo "Verified native build: $hori_build"

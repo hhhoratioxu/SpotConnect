@@ -18,6 +18,13 @@ add_subdirectory(../common/cspot/tests/audio audio)
 add_executable(hori-discover tools/discover.cpp)
 # macOS exposes DNSService APIs through libSystem's dnssd re-export.
 target_compile_options(hori-discover PRIVATE -Wall -Wextra -Wpedantic -Werror)
+add_executable(hori-network-tests tests/bonjour-lifecycle.cpp HoriBonjour.cpp)
+target_compile_definitions(hori-network-tests PRIVATE getifaddrs=hori_test_getifaddrs)
+target_compile_options(hori-network-tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+foreach(case missing lost stop bounded)
+  add_test(NAME bonjour_${case} COMMAND hori-network-tests ${case})
+  set_tests_properties(bonjour_${case} PROPERTIES TIMEOUT 10)
+endforeach()
 add_executable(hori-native-tests ../common/cspot/tests/audio/cdn-tests.cpp)
 target_include_directories(hori-native-tests PRIVATE
   ../common/libcodecs/targets/include/vorbis

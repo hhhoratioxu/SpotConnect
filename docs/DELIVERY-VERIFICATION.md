@@ -8,7 +8,7 @@ M4 Pro and older macOS versions are not physically verified in this session.
 - Native bridge, Bonjour discovery, local FLAC/PCM and bounded RAOP probe compiled.
   Runtime dependencies reported by the native bridge/probe are system libraries and
   system frameworks; OpenSSL, mbedTLS and codecs require no Homebrew runtime install.
-- Complete current suite: 44/44 PASS; project address/UB instrumentation: 44/44 PASS.
+- Complete current suite: 48/48 PASS; project address/UB instrumentation: 48/48 PASS.
 - Clang static analysis: six new audio/policy/discovery/probe translation units,
   zero diagnostics. Shell syntax and git whitespace checks passed.
 - Packaged executables passed ad-hoc strict signature checks, fresh ZIP extraction
@@ -32,3 +32,8 @@ The main bridge hosted workflow result is reported in the release and final deli
 Package ZIP hashes are in the accompanying .sha256 file; embedding a ZIP's own hash
 inside itself would be self-referential. SOURCE-MANIFEST.json identifies exact source
 and submodule commits. This is a Preview, not a Spotify Lossless-certified release.
+
+Preview.2 follow-up: the Mac was unlocked and the real Spotify picker inspected.
+The current personal hotspot has no observed HomePod service. Four additional
+process-local Bonjour lifecycle tests pass in both builds. Receiver reconnection
+after a physical network change remains UNVERIFIED; see LIVE-VALIDATION.md.

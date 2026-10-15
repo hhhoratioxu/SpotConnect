@@ -101,6 +101,12 @@ static log_level 			*loglevel = &main_loglevel;
 static bool			 		glDaemonize = false;
 #endif
 static bool					glMainRunning = true;
+#ifdef __APPLE__
+static pthread_mutex_t glHoriNetworkMutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t glHoriNetworkCond = PTHREAD_COND_INITIALIZER;
+static bool glHoriNetworkInvalid = false;
+static volatile sig_atomic_t glHoriStopSignal = 0;
+#endif
 static char					*glPidFile = NULL;
 static bool					glAutoSaveConfigFile = false;
 static bool					glGracefullShutdown = true;
@@ -465,13 +471,18 @@ static bool mDNSsearchCallback(mdnssd_service_t *slist, void *cookie, bool *stop
 
 /*----------------------------------------------------------------------------*/
 #ifdef __APPLE__
-static bool HoriDiscoveryRunning(void) { return glMainRunning; }
+static bool HoriDiscoveryRunning(void) { return glMainRunning && !glHoriStopSignal; }
 #endif
 static void *mDNSsearchThread(void *args) {
 	// launch the query,
 #ifdef __APPLE__
-	hori_bonjour_query(glHost, glDiscovery ? DISCOVERY_TIME : 0,
-		&mDNSsearchCallback, NULL, HoriDiscoveryRunning);
+	if (!hori_bonjour_query(glHost, glDiscovery ? DISCOVERY_TIME : 0,
+		&mDNSsearchCallback, NULL, HoriDiscoveryRunning) && glMainRunning && !glDiscovery) {
+		pthread_mutex_lock(&glHoriNetworkMutex);
+		glHoriNetworkInvalid = true;
+		pthread_cond_broadcast(&glHoriNetworkCond);
+		pthread_mutex_unlock(&glHoriNetworkMutex);
+	}
 #else
 	mdnssd_query(glmDNSsearchHandle, "_raop._tcp.local", false,
 			   glDiscovery ? DISCOVERY_TIME : 0, &mDNSsearchCallback, NULL);
@@ -1094,6 +1105,13 @@ static bool Stop(void) {
 
 /*---------------------------------------------------------------------------*/
 static void sighandler(int signum) {
+#ifdef __APPLE__
+	if (!glInteractive && glGracefullShutdown) {
+		// Shutdown belongs to the main thread, never a signal/Bonjour callback.
+		glHoriStopSignal = signum;
+		return;
+	}
+#endif
 	static bool quit = false;
 	// give it some time to finish ...
 	if (quit) {
@@ -1401,8 +1419,21 @@ int main(int argc, char *argv[]) {
 
 	if (!Start()) {
 		LOG_ERROR("Cannot start, exiting", NULL);
-		exit(0);
+		exit(1);
 	}
+
+#ifdef __APPLE__
+	if (!glInteractive) {
+		pthread_mutex_lock(&glHoriNetworkMutex);
+		while (!glHoriNetworkInvalid && !glHoriStopSignal)
+			pthread_cond_reltimedwait(&glHoriNetworkCond, &glHoriNetworkMutex, 500);
+		pthread_mutex_unlock(&glHoriNetworkMutex);
+		if (!glHoriStopSignal)
+			LOG_ERROR("HORI_NETWORK_RESTART_REQUIRED: Bonjour/LAN binding unavailable; retrying via LaunchAgent", NULL);
+		Stop();
+		return glHoriStopSignal ? 0 : 75;
+	}
+#endif
 
 	while (strcmp(resp, "exit")) {
 

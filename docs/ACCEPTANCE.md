@@ -3,7 +3,7 @@
 This is an executable Preview, not an accepted Spotify Lossless product. Each gate
 below needs separate evidence before a stable release.
 
-1. Unlock the Mac, use official Spotify's Connect picker, select the receiver ending
+1. Connect the Mac to the HomePod LAN. Use official Spotify's Connect picker, select the receiver ending
    in [HoriSpot], and verify the intended Premium account.
 2. Configure the user's own permitted application Client ID/Secret in installed
    0600 state/config.xml if required by the upstream token path. Do not use another
@@ -28,5 +28,6 @@ volume. Optional local FLAC sends at most three seconds at reduced amplitude wit
 an eight-second deadline. It labels local source and audible output unverified.
 
 已执行：HomePod 发现、Connect 注册、设备信息请求、实际 RAOP 握手、原创本地 FLAC
-的 44,100 帧发送。账号、界面、可听输出、控制和稳定性保留 UNVERIFIED。正式版本
+的 44,100 帧发送；解锁后也检查了官方 Spotify 的实际设备列表，当前热点上目标设备
+缺席。桥接账号登录、可听输出、控制和稳定性保留 UNVERIFIED。正式版本
 必须等待相应验收完成。

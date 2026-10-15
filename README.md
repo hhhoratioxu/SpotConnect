@@ -29,9 +29,9 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；可听结果、Spotify 账号�
 | 本地 FLAC | libFLAC 1.5.0；已测 16/24/32 位、mono/stereo、Seek、损坏/截断处理 |
 | Spotify FLAC 元数据 | 识别公开格式 ID 16/22；识别不等于能获取或播放 |
 | Spotify FLAC 源选择/访问 | 此客户端 UNAVAILABLE；没有 DRM/权限绕过或官方客户端密钥提取 |
-| HomePod 2 发现 | 当前 LAN 实测 PASS；原生 Bonjour 工具和桥接发现均成功 |
-| Connect 服务与设备信息 | 实测注册，ZeroConf 接口返回正常；Spotify UI 确认 UNVERIFIED |
-| RAOP 输出 | 当前 HomePod 接受 AppleLossless/ALAC 会话，44.1 kHz / 16-bit / stereo |
+| HomePod 2 发现 | 此前 HomePod LAN 实测 PASS；当前热点未发现目标设备 |
+| Connect 服务与设备信息 | 此前注册与 ZeroConf 接口 PASS；解锁后已检查 UI，热点下目标缺席 |
+| RAOP 输出 | 此前实测 HomePod 接受 AppleLossless/ALAC 会话，44.1 kHz / 16-bit / stereo |
 | 本地 FLAC → PCM → RAOP | 实际提交 44,100 帧；低幅度测试，可听输出 UNVERIFIED |
 | Spotify → HomePod 音乐 | UNVERIFIED；账号授权、个人 Client ID/Secret 尚未配置验证 |
 | 暂停 / Seek / 切歌 / 音量 | 控制路径保留；离线 Seek 测试 PASS，真实 Spotify 控制 UNVERIFIED |
@@ -41,13 +41,13 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；可听结果、Spotify 账号�
 
 ### 安装与运行
 
-下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.1)，
+下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.2)，
 解压并运行 scripts/install.sh。只写入当前用户目录，不需要 sudo。
 
 ```sh
-curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.1/HoriSpotConnect-0.1.0-preview.1-macos-arm64.zip -o HoriSpotConnect.zip
+curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.2/HoriSpotConnect-0.1.0-preview.2-macos-arm64.zip -o HoriSpotConnect.zip
 ditto -xk HoriSpotConnect.zip .
-bash HoriSpotConnect-0.1.0-preview.1-macos-arm64/scripts/install.sh
+bash HoriSpotConnect-0.1.0-preview.2-macos-arm64/scripts/install.sh
 ```
 
 安装器验证 SHA-256 和签名，安装到 ~/Library/Application Support/HoriSpotConnect，
@@ -68,6 +68,9 @@ AIRPLAY_OUTPUT 给出发送契约与请求编码，libraop 报告实际 ALAC/PCM
 
 启动器依据 HomePod 的 Bonjour 接口选择 LAN，避免误选本机虚拟网络接口。
 只绑定本程序；可用 HORISPOT_INTERFACE=en7 等覆盖，未修改系统代理或网络配置。
+Preview.2 检测绑定地址失效后清理连接，登录启动项以 30 秒节流重新发现并绑定。
+手动启动检查当前接口与地址，切换音质仍交由已有启动项管理。热点上没有 HomePod
+时只等待发现，不宣称已连接或播放。
 
 ### Spotify 登录与真实限制
 
@@ -100,8 +103,9 @@ bash scripts/package-macos.sh
 ```
 
 Git 中保留源码和 submodule 精确引用，产物附 SOURCE-MANIFEST.json 与许可证。
-当前完整套件 **44/44 PASS**，地址/未定义行为检查 **44/44 PASS**；覆盖原始
-PCM 逐样本比较、CDN/AES/HTTP Range 路径、Vorbis 96/160/320 解码与 Seek。
+当前完整套件 **48/48 PASS**，地址/未定义行为检查 **48/48 PASS**；覆盖原始
+PCM 逐样本比较、CDN/AES/HTTP Range 路径、Vorbis 96/160/320 解码与 Seek，
+以及 4 项隔离的 Bonjour 接口生命周期测试；不会修改系统网络。
 音频为原创合成、CC0-1.0，未分发 Spotify 商业录音。
 [完整测试记录](docs/TEST-RESULTS.md) · [真实环境验收](docs/ACCEPTANCE.md)
 
@@ -126,8 +130,17 @@ Mono duplication, bit-depth reduction and resampling are reported separately.
 On the tested HomePod 2, discovery and RAOP session acceptance succeeded. An
 original local 24-bit FLAC supplied 44,100 PCM frames to the real ALAC/RAOP sender,
 with deliberate attenuation for the short test. Audible output, Spotify Premium
-playback, and controls remain **UNVERIFIED**. UI testing was blocked by the locked
-Mac, and personal application credentials were not supplied.
+playback, and controls remain **UNVERIFIED**. After the Mac was unlocked, the
+official Spotify device picker was inspected: the phone and this computer were
+available, while the HomePod bridge was absent on the current personal hotspot.
+No bridge login or music source was obtained. Personal application credentials
+were not supplied. The phone's Lossless badge is not bridge source evidence.
+
+Preview.2 detects a disappeared bind address and cleans up before the user
+LaunchAgent retries discovery, with a 30-second throttle. Manual startup validates
+its interface/address and preserves LaunchAgent management when changing modes.
+The 48-test native and instrumented suites include four isolated Bonjour lifecycle
+tests. No physical network switching or HomePod reconnection is inferred from them.
 
 Use the install commands above or scripts/build-macos.sh. Installation is user-only,
 verifies hashes and ad-hoc signatures, and adds a user LaunchAgent. Runtime secrets

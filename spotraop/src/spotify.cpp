@@ -572,7 +572,7 @@ void spotOpen(uint16_t portBase, uint16_t portRange, char *username, char *passw
 }
 
 int spotValidateQualityMode(void) {
-    fprintf(stderr, "HoriSpotConnect 0.1.0-preview.1 | Experimental | original upstream copyrights retained\n");
+    fprintf(stderr, "HoriSpotConnect 0.1.0-preview.2 | Experimental | original upstream copyrights retained\n");
     try {
         const auto* mode = std::getenv("HORISPOT_QUALITY");
         CSpotPlayer::qualityMode = mode ? cspot::parseQualityMode(mode) : cspot::QualityMode::Legacy;

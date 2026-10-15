@@ -14,7 +14,7 @@ cat > "$hori_plist" <<XML
 <key>ProgramArguments</key><array><string>$(escape_xml "$hori_home/current/scripts/start.sh")</string></array>
 <key>EnvironmentVariables</key><dict><key>HORISPOT_HOME</key><string>$(escape_xml "$hori_home")</string></dict>
 <key>RunAtLoad</key><true/>
-<key>KeepAlive</key><dict><key>Crashed</key><true/></dict>
+<key>KeepAlive</key><dict><key>Crashed</key><true/><key>SuccessfulExit</key><false/></dict>
 <key>ThrottleInterval</key><integer>30</integer>
 <key>ProcessType</key><string>Background</string>
 <key>StandardOutPath</key><string>$(escape_xml "$hori_home/logs/stdout.log")</string>

@@ -11,6 +11,19 @@
 #include <vector>
 
 namespace {
+static uint32_t interfaceForAddress(in_addr bind) {
+  uint32_t interface = 0;
+  ifaddrs* addresses = nullptr;
+  if (getifaddrs(&addresses) == 0) {
+    for (auto* item = addresses; item; item = item->ifa_next)
+      if (item->ifa_addr && item->ifa_addr->sa_family == AF_INET &&
+          (item->ifa_flags & IFF_UP) &&
+          reinterpret_cast<sockaddr_in*>(item->ifa_addr)->sin_addr.s_addr == bind.s_addr)
+        interface = if_nametoindex(item->ifa_name);
+    freeifaddrs(addresses);
+  }
+  return interface;
+}
 struct Query;
 struct Record {
   Query* query = nullptr;
@@ -119,19 +132,20 @@ extern "C" bool hori_bonjour_query(in_addr bind, int seconds, mdns_callback_t* c
   if (!callback || !running) return false;
   Query query{callback, cookie, {}, false};
   DNSServiceRef browse = nullptr;
-  uint32_t interface = 0;
-  ifaddrs* addresses = nullptr;
-  if (getifaddrs(&addresses) == 0) {
-    for (auto* item = addresses; item; item = item->ifa_next)
-      if (item->ifa_addr && item->ifa_addr->sa_family == AF_INET &&
-          reinterpret_cast<sockaddr_in*>(item->ifa_addr)->sin_addr.s_addr == bind.s_addr)
-        interface = if_nametoindex(item->ifa_name);
-    freeifaddrs(addresses);
-  }
+  const auto interface = interfaceForAddress(bind);
   if (!interface || DNSServiceBrowse(&browse, 0, interface, "_raop._tcp", "local",
                                      browsed, &query) != kDNSServiceErr_NoError) return false;
   const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
+  auto nextBindCheck = std::chrono::steady_clock::now();
   while (running() && !query.failed && (!seconds || std::chrono::steady_clock::now() < deadline)) {
+    if (std::chrono::steady_clock::now() >= nextBindCheck) {
+      nextBindCheck = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+      if (interfaceForAddress(bind) != interface) {
+        std::fprintf(stderr, "HORI_LAN_BIND_LOST: selected interface/address disappeared; rediscovery required\n");
+        query.failed = true;
+        break;
+      }
+    }
     std::vector<DNSServiceRef> refs{browse};
     for (auto& record : query.records) if (!record->removed) {
       if (record->resolve) refs.push_back(record->resolve);

@@ -1,5 +1,22 @@
 # HoriSpotConnect changelog
 
+## 0.1.0-preview.3 — 2026-10-15
+
+Preview / Experimental diagnostics. HomePod music audibility has not passed;
+Spotify FLAC access remains unavailable.
+
+- Keep RAOP connection calls independent of INFO logging. Retain pending PCM when
+  the session is down or the chunk API rejects data.
+- Report PCM submission frames, nonzero samples, signed 16-bit peak and sender
+  state; preserve separate audible-output and bit-perfect acceptance gates.
+- Add explicit ALAC/ALAC_RAW and verbose options to the bounded local probe.
+- Add four sample-exact ALAC encoder/reference-decoder tests for full/short packets,
+  stereo signed extrema and zero padding. Execute 52 native / 52 instrumented tests.
+- Include software/version and clock-related Bonjour TXT fields for diagnosis.
+- Record owner-approved private app setup, actual Spotify token/CDN/Vorbis decoding,
+  and the user's repeated music silence. Investigate AirPlay OS 27 compatibility
+  separately, without presenting a protocol handshake as audible success.
+
 ## Verification follow-up — 2026-10-15
 
 Documentation only; published Preview.2 binaries/tag remain unchanged.

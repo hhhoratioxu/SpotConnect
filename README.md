@@ -16,8 +16,9 @@ Home Assistant。不能把 Vorbis 转 ALAC、Spotify UI 的 Lossless 标签，�
 已完成 macOS ARM64 可执行桥接、独立 libFLAC 解码和 PCM 转换、严格音质模式、
 HomePod 发现、启动/安装/卸载脚本与用户级 LaunchAgent。当前会话完成了 HomePod 2
 RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，服务恢复发现，用户
-选中了 Connect 设备，真实账号会话、曲目元数据和音频密钥已取得。音乐下载因缺少
-个人应用凭据而 BLOCKED；可听结果与真实控制验收仍为 UNVERIFIED。
+选中了 Connect 设备。经用户确认创建自己的开发者应用、私密配置后，token、真实
+曲目元数据、音频密钥、CDN 下载和 Vorbis 解码均已通过。用户仍报告歌曲无声，
+因此 HomePod 音乐输出验收为 FAIL；真实控制与连续播放仍未验收。
 
 ### 音质与支持矩阵
 
@@ -33,9 +34,10 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 | HomePod 2 发现与网络恢复 | 返回共同局域网后恢复发现和 renderer 创建，实测 PASS |
 | Connect 服务与设备信息 | 注册与 ZeroConf 接口 PASS；用户已手动选中目标设备 |
 | Spotify Connect 账号会话 | PASS；取得真实曲目元数据和音频密钥，元数据选中 Vorbis 320 |
+| Spotify Vorbis 下载与解码 | PASS；自己的应用 token、CDN 地址和实际解码器：Vorbis 320 / 44.1 kHz / stereo / 16-bit PCM |
 | RAOP 输出 | 返回局域网后再次实测 HomePod 接受 ALAC 会话，44.1 kHz / 16-bit / stereo |
 | 本地 FLAC → PCM → RAOP | 实际提交 44,100 帧；低幅度测试，可听输出 UNVERIFIED |
-| Spotify → HomePod 音乐 | BLOCKED；个人 Client ID/Secret 为空，未发 token/CDN 请求，用户报告无声 |
+| Spotify → HomePod 音乐 | FAIL for audible output；取流与解码通过，用户再次报告无声，继续定位发送/接收兼容性 |
 | 暂停 / Seek / 切歌 / 音量 | 控制路径保留；离线 Seek 测试 PASS，真实 Spotify 控制 UNVERIFIED |
 | 长时间连续播放 | UNVERIFIED |
 | HomePod 端到端 bit-perfect | UNVERIFIED；24→16 位和重采样会改变样本 |
@@ -43,13 +45,13 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 
 ### 安装与运行
 
-下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.2)，
+下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.3)，
 解压并运行 scripts/install.sh。只写入当前用户目录，不需要 sudo。
 
 ```sh
-curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.2/HoriSpotConnect-0.1.0-preview.2-macos-arm64.zip -o HoriSpotConnect.zip
+curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.3/HoriSpotConnect-0.1.0-preview.3-macos-arm64.zip -o HoriSpotConnect.zip
 ditto -xk HoriSpotConnect.zip .
-bash HoriSpotConnect-0.1.0-preview.2-macos-arm64/scripts/install.sh
+bash HoriSpotConnect-0.1.0-preview.3-macos-arm64/scripts/install.sh
 ```
 
 安装器验证 SHA-256 和签名，安装到 ~/Library/Application Support/HoriSpotConnect，
@@ -87,13 +89,21 @@ Secret 获取其 Web API token（[上游说明](https://github.com/philippe44/Sp
 账号的 Lossless 授权，也不能解锁 FLAC。缺少凭据时清晰报错，不发送占位符或
 打印秘密。
 
-当前真实测试已完成 Connect 账号会话和元数据/音频密钥请求；程序在缺少应用凭据
-时停止于下载地址获取前。尚未取得 Spotify 音频字节，不能把元数据选择记为解码
-成功。应用可在 [Spotify 官方后台](https://developer.spotify.com/dashboard) 查看；新建
+当前真实测试已完成 Connect 账号会话、应用 token、元数据/音频密钥、CDN 下载和
+Vorbis 解码。第一次无声确实缺少应用凭据；配置后仍无声，不能把这个旧阻塞继续
+当作当前原因，也不能把解码成功当作 HomePod 发声。应用可在
+[Spotify 官方后台](https://developer.spotify.com/dashboard) 查看；新建
 应用涉及开发者条款和凭据创建，需由账号所有者确认。2026 年新的 Development Mode
 还有 Premium、单个 Client ID 和接口范围限制，详见
 [官方更新](https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security)。
-补齐凭据后仍须验证当前服务是否允许下载，不能保证 Vorbis 或 FLAC 访问。
+本机应用已实际取得 Vorbis 下载权限；这不保证其他应用、账号或 FLAC 访问。
+根节点下需要实际的 `<client_id>` / `<client_secret>` 元素，注释里的示例不会生效。
+
+Preview.3 增加实际 PCM 提交帧数、非零样本数、16 位峰值和发送端状态日志，并在
+会话关闭或数据块被拒绝时保留待发送 PCM。连接调用独立于日志级别。新增四项
+ALAC 编码/参考解码测试验证完整与短数据块逐样本还原；这些检查不代替真实发声。
+HomePod 广播 `osvers=27.2`，另一个上游已修复部分 OS 27 的播放时钟兼容问题；
+目前只是候选原因，详见 [AirPlay 兼容性记录](docs/AIRPLAY-COMPATIBILITY.md)。
 
 已核查最新源码/Issues/PR，见 [上游审计](docs/UPSTREAM-AUDIT.md)。SpotConnect
 维护者尚无实现 Lossless 的计划；librespot 维护者报告 Spotify 技术保护限制。
@@ -115,9 +125,9 @@ bash scripts/package-macos.sh
 ```
 
 Git 中保留源码和 submodule 精确引用，产物附 SOURCE-MANIFEST.json 与许可证。
-当前完整套件 **48/48 PASS**，地址/未定义行为检查 **48/48 PASS**；覆盖原始
+当前完整套件 **52/52 PASS**，地址/未定义行为检查 **52/52 PASS**；覆盖原始
 PCM 逐样本比较、CDN/AES/HTTP Range 路径、Vorbis 96/160/320 解码与 Seek，
-以及 4 项隔离的 Bonjour 接口生命周期测试；不会修改系统网络。
+以及 4 项隔离的 Bonjour 接口生命周期、4 项 ALAC 编码/解码测试；不会修改系统网络。
 音频为原创合成、CC0-1.0，未分发 Spotify 商业录音。
 [完整测试记录](docs/TEST-RESULTS.md) · [真实环境验收](docs/ACCEPTANCE.md)
 
@@ -145,19 +155,28 @@ with deliberate attenuation for the short test. Receiver audibility and real
 controls remain **UNVERIFIED**. After the user returned from a personal hotspot
 to the HomePod LAN, the managed bridge recovered discovery and its Connect
 advertisement. The user selected the target and reported silence. The real
-Connect account session, track metadata and audio-key response succeeded;
-AUTO selected OGG_VORBIS_320 in metadata. Music download is **BLOCKED** by empty
-personal application credentials: no token or CDN URL request was sent, and no
-Spotify audio bytes or decoder source format were obtained. This is not a server
-denial or a successful playback test. Application credentials do not grant FLAC
-rights or guarantee access under current Development Mode restrictions.
+Connect account session, track metadata and audio-key response succeeded. The
+initial attempt stopped before download because application credentials were
+empty. The owner then approved creating an application and accepting its terms;
+credentials were stored privately. Token issuance, signed CDN resolution and
+actual Vorbis 320 decoding subsequently passed (44.1kHz, stereo, 16-bit PCM).
+The user again reported silence: end-to-end music output is **FAIL**, not an
+accepted playback result. Application credentials do not grant FLAC rights or
+guarantee access for another app/account under Development Mode restrictions.
 
 Preview.2 detects a disappeared bind address and cleans up before the user
 LaunchAgent retries discovery, with a 30-second throttle. Manual startup validates
 its interface/address and preserves LaunchAgent management when changing modes.
-The 48-test native and instrumented suites include four isolated Bonjour lifecycle
+The 52-test native and instrumented suites include four isolated Bonjour lifecycle
 tests. The separate real return-to-LAN observation confirms this recovery case;
 it does not prove extended streaming stability or every network-change scenario.
+Preview.3 adds bounded PCM submission/signal statistics, retains pending PCM when
+the sink is down or rejects a chunk, and keeps connection calls independent of
+logging. Four additional tests compare signed PCM through the exact ALAC encoders
+and Apple's reference decoder. ALAC and raw ALAC local probes each submitted
+132,300 frames with receiver timing replies and no observed send errors; audible
+output remains unconfirmed. Newer AirPlay 2 clock compatibility is under separate
+investigation; it is not an implemented Spotify FLAC provider.
 
 Use the install commands above or scripts/build-macos.sh. Installation is user-only,
 verifies hashes and ad-hoc signatures, and adds a user LaunchAgent. Runtime secrets

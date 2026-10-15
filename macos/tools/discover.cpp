@@ -42,7 +42,9 @@ static void resolved(DNSServiceRef, DNSServiceFlags, uint32_t interface, DNSServ
         ",\"interface\":" + json(interfaceName) +
         ",\"port\":" + std::to_string(ntohs(port)) + ",\"advertised\":{";
     bool comma = false;
-    for (const auto* key : {"am", "cn", "sr", "ss", "ch", "et", "VERSION", "CPath"}) {
+    for (const auto* key : {"am", "model", "cn", "sr", "ss", "ch", "et",
+                            "osvers", "vs", "srcvers", "fv", "features", "flags",
+                            "igl", "pgid", "tsid", "VERSION", "CPath"}) {
       uint8_t size = 0;
       const void* p = TXTRecordGetValuePtr(length, txt, key, &size);
       if (!p) continue;

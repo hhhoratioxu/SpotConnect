@@ -29,7 +29,8 @@ an eight-second deadline. It labels local source and audible output unverified.
 
 已执行：返回 HomePod 局域网后恢复发现和 Connect 注册、设备信息请求、实际
 RAOP 握手、原创本地 FLAC 的 44,100 帧发送。用户手动选中目标后，真实 Connect
-账号会话、曲目元数据和音频密钥取得成功，元数据选择 Vorbis 320。个人应用凭据
-为空，下载地址请求尚未发出；用户报告歌曲无声，因此 Spotify 音乐播放为 BLOCKED。
+账号会话、曲目元数据和音频密钥取得成功。经用户确认创建应用和私密配置后，
+token、CDN 下载及实际 Vorbis 320 解码通过（44.1kHz / stereo / 16-bit PCM）；
+用户再次报告歌曲无声，因此 Spotify → HomePod 的可听输出验收为 FAIL。
 本地测试音未获听到确认，可听输出、真实控制和稳定性保留 UNVERIFIED。正式版本
 必须等待相应验收完成。详见 [LIVE-VALIDATION.md](LIVE-VALIDATION.md)。

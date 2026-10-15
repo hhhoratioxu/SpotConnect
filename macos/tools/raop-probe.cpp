@@ -19,22 +19,29 @@ int main(int argc, char** argv) {
   struct raopcl_s* sender = nullptr;
   bool ssl = false, connected = false;
   try {
-    std::string bind, host, file, model;
+    std::string bind, host, file, model, codecName = "ALAC";
+    raop_codec_t codec = RAOP_ALAC;
     unsigned port = 7000;
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
       if (arg == "--help") {
-        std::cout << "hori-raop-probe --bind IPV4 --host IPV4 --model ADVERTISED_MODEL [--port N] [--local-flac FILE]\n"
+        std::cout << "hori-raop-probe --bind IPV4 --host IPV4 --model ADVERTISED_MODEL [--port N] [--local-flac FILE] [--codec alac|alac_raw] [--verbose]\n"
                      "Default: test only the RAOP session, preserve device volume, then disconnect.\n"
                      "Optional local FLAC sends at most 3 seconds at reduced sample amplitude.\n"
                      "No Spotify source or end-to-end bit-perfect claim.\n"; return 0;
       }
+      if (arg == "--verbose") { raop_loglevel = lDEBUG; continue; }
       if (i + 1 >= argc) throw std::invalid_argument("argument needs a value");
       const std::string value = argv[++i];
       if (arg == "--bind") bind = value;
       else if (arg == "--host") host = value;
       else if (arg == "--model") model = value;
       else if (arg == "--local-flac") file = value;
+      else if (arg == "--codec") {
+        if (value == "alac") { codec = RAOP_ALAC; codecName = "ALAC"; }
+        else if (value == "alac_raw") { codec = RAOP_ALAC_RAW; codecName = "ALAC_RAW"; }
+        else throw std::invalid_argument("codec must be alac or alac_raw (both AppleLossless)");
+      }
       else if (arg == "--port") {
         const auto r = std::from_chars(value.data(), value.data() + value.size(), port);
         if (r.ec != std::errc{} || r.ptr != value.data() + value.size() || port < 1 || port > 65535)
@@ -53,7 +60,7 @@ int main(int argc, char** argv) {
     ssl = cross_ssl_load();
     if (!ssl) throw std::runtime_error("OpenSSL initialization failed");
     char et[] = "0,3,5";
-    sender = raopcl_create(local, 0, 1, nullptr, nullptr, RAOP_ALAC, 352, 44100,
+    sender = raopcl_create(local, 0, 1, nullptr, nullptr, codec, 352, 44100,
                            RAOP_CLEAR, false, nullptr, nullptr, et, nullptr,
                            model.c_str(), 44100, 16, 2, -40.0f);
     if (!sender) throw std::runtime_error("RAOP sender creation failed");
@@ -80,11 +87,14 @@ int main(int argc, char** argv) {
       if (!frames) throw std::runtime_error("RAOP accepted no audio frames");
       std::this_thread::sleep_for(std::chrono::seconds(2));
     }
+    const bool senderSane = raopcl_is_sane(sender);
     raopcl_disconnect(sender); raopcl_destroy(sender); sender = nullptr;
     cross_ssl_free(); ssl = false;
     std::cout << "{\"raop_session_accepted\":true,\"source\":"
               << (pcm ? "\"local_FLAC\"" : "\"none_connect_only\"")
-              << ",\"wire_codec\":\"AppleLossless\",\"encoder_requested\":\"ALAC\",\"sample_rate\":44100,\"bits\":16,\"channels\":2,"
+              << ",\"wire_codec\":\"AppleLossless\",\"encoder_requested\":\"" << codecName
+              << "\",\"sender_sane\":" << (senderSane ? "true" : "false")
+              << ",\"sample_rate\":44100,\"bits\":16,\"channels\":2,"
                  "\"frames_submitted\":" << frames
               << ",\"samples_attenuated\":" << (pcm ? "true" : "false");
     if (decoder) {

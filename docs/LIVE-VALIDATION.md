@@ -100,13 +100,51 @@ audibility, Spotify audio, or end-to-end bit-perfect output.
 
 The official developer dashboard was opened with the user's manual sign-in. It
 showed no existing applications. No application secret was copied from the
-official Spotify player, another application, or upstream binaries. Creating
-an application and accepting its developer terms require the account owner's
-confirmation; an application token alone does not authorize FLAC access or
-guarantee that current Development Mode permits the storage endpoint.
+official Spotify player, another application, or upstream binaries.
 
 用户返回局域网后，HomePod 发现和 Connect 广播已经恢复；用户选中了目标设备，
 真实账号会话、曲目元数据及音频密钥取得成功。当前无声卡在音乐下载前：个人应用
 凭据为空，因此没有发送 token/CDN 地址请求，也没有 Spotify 音频字节或解码器源
 格式证据。补齐自己的获准应用凭据后，还要实际验证服务器是否允许下载，再验收
 可听音乐、暂停、Seek、切歌、音量和稳定性。真实 Spotify Lossless 仍未实现。
+
+## Owner-approved application and actual Spotify audio
+
+The owner explicitly approved creating HoriSpotConnect in their developer account
+and accepting Spotify's developer terms/design guidelines. The app was created
+through the official dashboard. Its visible credentials were transferred directly
+to the installed private XML, mode 0600; a 0600 temporary transfer file was removed.
+Values were never printed or committed. A credential preflight received HTTP 200
+and a token with 3600 seconds lifetime, without logging or saving that token.
+
+The owned user LaunchAgent was restarted. The user selected HoriSpot again and
+reported no sound. This attempt, at approximately 12:25 local time, produced:
+
+- Bridge token issuance success, metadata selection of OGG_VORBIS_320, audio-key
+  responses, signed CDN URL resolution and CDN stream opening.
+- Actual decoder `AUDIO_SOURCE`: `codec=OGG_VORBIS_320 sample_rate=44100 channels=2
+  source_bit_depth=not_applicable decoded_pcm_bits=16 lossless=0`.
+- Accepted RAOP LOAD and PLAY sessions, streaming-state entry, progress setup and
+  volume commands. These are sender-side events, not audible-output proof.
+- A later Mercury read error/reconnection event. Extended stability does not pass.
+
+Thus the initial configuration blocker was resolved and lawful account/app Vorbis
+download/decoding passed on this installation. HomePod music output still FAILS
+the user's audible check. No Spotify FLAC bytes were requested or decoded. No
+conclusion about another account, application or FLAC entitlement follows.
+
+A privacy scan of 74,283 tracked source files, runtime logs and the downloaded
+public Preview.2 package found no matches for the new application credentials.
+
+Both local encoder paths were then tested with an original 3-second 24-bit FLAC,
+attenuated before sending: ALAC and ALAC_RAW each supplied 132,300 frames and
+completed accepted HomePod sessions. Each log contained five timing responses,
+learned the receiver timing port, and recorded no audio socket send errors. The
+user did not notice the tones, so these remain sender/timing evidence only.
+
+AirPlay TXT advertises `osvers=27.2`. A separately downloaded, checksum-verified
+official airplay-cli v0.5.8 connected through native AirPlay 2 with NTP timing,
+buffered local PCM and acknowledged START, then disconnected with exit 0. It was
+not integrated into the bridge and does not prove audible music. PTP clock mode
+requires UDP 319/320; direct unprivileged binds returned EACCES. System networking
+and device access settings were not changed. See AIRPLAY-COMPATIBILITY.md.

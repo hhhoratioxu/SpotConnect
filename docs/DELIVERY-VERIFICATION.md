@@ -79,8 +79,32 @@ in LIVE-VALIDATION.md.
   metadata and audio-key response succeeded. AUTO selected OGG_VORBIS_320 in
   metadata. The user reported no music. Empty application credentials prevented
   token/CDN URL requests; no Spotify audio bytes reached a decoder. Music playback
-  remains BLOCKED, not a successful Vorbis or FLAC result and not a server denial.
+  was BLOCKED at that attempt, not a successful Vorbis or FLAC result or server denial.
 - The real HomePod again accepted ALAC, 44.1kHz / 16-bit / stereo. A new original
   local 24-bit FLAC submission supplied 44,100 attenuated frames. The user did not
   notice the quiet test, so audibility remains UNVERIFIED. The test is local audio,
   not Spotify source or end-to-end bit-perfect evidence.
+
+## Preview.3 diagnostics and later account evidence
+
+- Local native and project-instrumented suites: 52/52 PASS each. Four added tests
+  encode independent signed PCM with the actual ALAC/ALAC_RAW encoders linked by
+  RAOP and compare every sample through Apple's reference decoder, including
+  stereo extrema and short-packet zero padding. Dependencies remain precompiled.
+- PCM submission now reports frame counts, nonzero samples, peak and session/sane
+  state. A down session or rejected chunk retains pending PCM. Session connection
+  no longer depends on an enabled INFO logging macro. Physical music verification
+  of these diagnostics is separate from compilation/offline checks.
+- Full changed-unit Clang analysis: PCM C++ unit had zero diagnostics; C main had
+  19 diagnostic messages, identical to analysis of the pre-change source. These
+  existing findings are not presented as a completely clean whole-bridge audit.
+- After explicit owner approval, a new developer application was created and its
+  credentials configured privately. Both direct token preflight and the bridge
+  fetched a token. Actual Spotify CDN resolution/download and Vorbis 320 decoder
+  opening passed, reporting 44100 Hz / stereo / 16-bit PCM. The user still reported
+  no music; audible output is FAIL, while controls/stability remain unaccepted.
+- A known-values privacy scan found no application credentials in 74,283 tracked
+  source files, runtime logs or the previously published Preview.2 archive.
+- Two fresh local 3-second ALAC/ALAC_RAW probes each supplied 132,300 attenuated
+  frames, received receiver timing exchanges and had no observed audio send errors.
+  The user did not notice them; no audible pass is recorded.

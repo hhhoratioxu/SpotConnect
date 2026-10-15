@@ -9,6 +9,7 @@
 #include <fstream>
 #include <stdarg.h>
 #include <deque>
+#include <cstring>
 #include "time.h"
 
 #ifdef BELL_ONLY_CJSON
@@ -73,6 +74,10 @@ private:
     uint32_t delay;
     size_t scratchSize;
     uint8_t scratch[DEFAULT_FRAMES_PER_CHUNK * BYTES_PER_FRAME];
+    // Owned by the PCM callback. These are signal statistics, never audio data.
+    uint64_t submittedFrames = 0, reportFrames = 0, nonzeroSamples = 0;
+    int peakSample = 0;
+    bool sinkErrorReported = false;
 
     std::unique_ptr<bell::MDNSService> mdnsService;
 
@@ -152,6 +157,9 @@ size_t CSpotPlayer::writePCM(uint8_t* pcm, size_t bytes, std::string_view trackU
     if (streamTrackUnique != trackUnique) {
         CSPOT_LOG(info, "trackUniqueId update %s => %s", streamTrackUnique.c_str(), trackUnique.data());
         streamTrackUnique = trackUnique;
+        submittedFrames = reportFrames = nonzeroSamples = 0;
+        peakSample = 0;
+        sinkErrorReported = false;
 
         if (trackStatus != TRACK_INIT) startOffset = 0;
 
@@ -162,6 +170,14 @@ size_t CSpotPlayer::writePCM(uint8_t* pcm, size_t bytes, std::string_view trackU
     }
 
     if (!raopcl_accept_frames(raopClient)) return (size_t) 0;
+    // accept_frames can advance its clock even after the session goes down.
+    // Keep the PCM pending until there is a session to accept it.
+    if (raopcl_state(raopClient) == RAOP_DOWN) {
+        if (!sinkErrorReported)
+            CSPOT_LOG(error, "RAOP_PCM_WAITING session_state=DOWN frames_consumed=0");
+        sinkErrorReported = true;
+        return 0;
+    }
 
     // do we have enough samples (unless it's last packet)
     if (trackStatus != TRACK_END && scratchSize + bytes < frameSize * BYTES_PER_FRAME) {
@@ -182,7 +198,32 @@ size_t CSpotPlayer::writePCM(uint8_t* pcm, size_t bytes, std::string_view trackU
     }
 
     // sending chunk will exit FLUSHED state (might be last packet)
-    raopcl_send_chunk(raopClient, data, (consumed + scratchSize) / BYTES_PER_FRAME, &playtime);
+    const size_t chunkBytes = consumed + scratchSize;
+    if (!raopcl_send_chunk(raopClient, data, chunkBytes / BYTES_PER_FRAME, &playtime)) {
+        if (!sinkErrorReported)
+            CSPOT_LOG(error, "RAOP_CHUNK_REJECTED frames_consumed=0 session_state=%d",
+                      static_cast<int>(raopcl_state(raopClient)));
+        sinkErrorReported = true;
+        return 0;
+    }
+    sinkErrorReported = false;
+    submittedFrames += chunkBytes / BYTES_PER_FRAME;
+    for (size_t offset = 0; offset + sizeof(int16_t) <= chunkBytes; offset += sizeof(int16_t)) {
+        int16_t sample;
+        std::memcpy(&sample, data + offset, sizeof(sample));
+        const int magnitude = sample < 0 ? -static_cast<int>(sample) : sample;
+        if (magnitude) ++nonzeroSamples;
+        if (magnitude > peakSample) peakSample = magnitude;
+    }
+    if (submittedFrames - reportFrames >= 44100) {
+        CSPOT_LOG(info, "RAOP_PCM_SUBMISSION frames=%" PRIu64 " nonzero_samples=%" PRIu64
+                  " peak_s16=%d session_state=%d sender_sane=%d audible_output=UNVERIFIED",
+                  submittedFrames, nonzeroSamples, peakSample,
+                  static_cast<int>(raopcl_state(raopClient)), raopcl_is_sane(raopClient));
+        reportFrames = submittedFrames;
+        nonzeroSamples = 0;
+        peakSample = 0;
+    }
     scratchSize = 0;
 
     return consumed;
@@ -572,7 +613,7 @@ void spotOpen(uint16_t portBase, uint16_t portRange, char *username, char *passw
 }
 
 int spotValidateQualityMode(void) {
-    fprintf(stderr, "HoriSpotConnect 0.1.0-preview.2 | Experimental | original upstream copyrights retained\n");
+    fprintf(stderr, "HoriSpotConnect 0.1.0-preview.3 | Experimental | original upstream copyrights retained\n");
     try {
         const auto* mode = std::getenv("HORISPOT_QUALITY");
         CSpotPlayer::qualityMode = mode ? cspot::parseQualityMode(mode) : cspot::QualityMode::Legacy;

@@ -5,7 +5,7 @@ hori_package=$(cd "$(dirname "$0")/.." && pwd)
 if [[ ! -x "$hori_package/bin/HoriSpotConnect" ]]; then
   "$hori_package/scripts/build-macos.sh"
   "$hori_package/scripts/package-macos.sh"
-  exec "$hori_package/dist/HoriSpotConnect-0.1.0-preview.2-macos-arm64/scripts/install.sh" "$@"
+  exec "$hori_package/dist/HoriSpotConnect-0.1.0-preview.3-macos-arm64/scripts/install.sh" "$@"
 fi
 if [[ $(uname -s) != Darwin || $(uname -m) != arm64 ]]; then echo "macOS ARM64 required" >&2; exit 2; fi
 hori_agent=true
@@ -16,7 +16,7 @@ for hori_binary in HoriSpotConnect hori-discover hori-audio-probe hori-raop-prob
   codesign --verify --strict "$hori_package/bin/$hori_binary"
 done
 hori_home=${HORISPOT_HOME:-"$HOME/Library/Application Support/HoriSpotConnect"}
-hori_dest="$hori_home/versions/0.1.0-preview.2"
+hori_dest="$hori_home/versions/0.1.0-preview.3"
 # Stop only this owned installation before replacing an executable that may run.
 hori_existing_agent="${HORISPOT_AGENT_DIR:-$HOME/Library/LaunchAgents}/com.hhhoratioxu.HoriSpotConnect.plist"
 if [[ -f "$hori_existing_agent" ]]; then

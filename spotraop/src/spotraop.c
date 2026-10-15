@@ -267,17 +267,21 @@ void shadowRequest(struct shadowPlayer* shadow, enum spotEvent event, ...) {
 		}
 		break;
 	}
-	case SPOT_LOAD:
+	case SPOT_LOAD: {
 		LOG_INFO("[%p]: spotify LOAD request", Device);
+		bool accepted = raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true);
 		LOG_INFO("RAOP_SESSION accepted=%d audible_output=UNVERIFIED",
-			 raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true));
+			 accepted);
 		break;
-	case SPOT_PLAY:
+	}
+	case SPOT_PLAY: {
 		LOG_INFO("[%p]: spotify PLAY request", Device);
+		bool accepted = raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true);
 		LOG_INFO("RAOP_SESSION accepted=%d audible_output=UNVERIFIED",
-			 raopcl_connect(Device->Raop, Device->PlayerIP, Device->PlayerPort, true));
+			 accepted);
 		Device->SpotState = SPOT_PLAY;
 		break;
+	}
 	case SPOT_VOLUME: {
 		// discard echo commands
 		uint32_t now = gettime_ms();

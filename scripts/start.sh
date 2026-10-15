@@ -18,6 +18,10 @@ if [[ "$hori_mode" == LOSSLESS ]]; then
   exec "$hori_version/bin/HoriSpotConnect" -Z -x "$hori_home/state/config.xml"
 fi
 hori_interface=${HORISPOT_INTERFACE:-}
+if [[ -z "$hori_interface" && -f "$hori_home/state/interface.request" ]]; then
+  IFS= read -r hori_interface < "$hori_home/state/interface.request" || true
+  rm -- "$hori_home/state/interface.request"
+fi
 if [[ -z "$hori_interface" ]]; then
   "$hori_version/bin/hori-discover" --seconds 3 --match HomePod > "$hori_home/state/discovery.json"
   hori_interface=$(plutil -extract devices.0.interface raw -o - "$hori_home/state/discovery.json" 2>/dev/null || true)
@@ -64,6 +68,9 @@ printf '%s\n' "$hori_mode" > "$hori_home/state/running.mode"
 printf '%s\n' "$hori_interface" > "$hori_home/state/running.interface"
 printf '%s\n' "$hori_ipv4" > "$hori_home/state/running.ipv4"
 if $hori_restart_agent; then
+  # Pass this invocation's selected interface to the next managed process only.
+  # A later network failure goes back to automatic Bonjour/Wi-Fi discovery.
+  printf '%s\n' "$hori_interface" > "$hori_home/state/interface.request"
   launchctl kickstart "gui/$(id -u)/com.hhhoratioxu.HoriSpotConnect"
   echo "Restart requested through the existing user LaunchAgent ($hori_mode)." >&2
   exit 0

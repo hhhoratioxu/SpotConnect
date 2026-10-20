@@ -11,6 +11,9 @@ if [[ -z "$hori_mode" ]]; then
 fi
 case "$hori_mode" in AUTO|LOSSLESS|VORBIS_320) ;; *) echo "quality must be AUTO, LOSSLESS or VORBIS_320" >&2; exit 2;; esac
 export HORISPOT_QUALITY="$hori_mode"
+# LaunchAgents may execute through a wrapper/symlink; use the installed sender explicitly.
+export HORISPOT_AIRPLAY2_SENDER="$hori_version/bin/hori-airplay"
+export HORISPOT_AIRPLAY_DISCOVERY="$hori_home/state/discovery.json"
 if [[ ! -f "$hori_home/state/config.xml" ]]; then echo "Run install.sh first." >&2; exit 2; fi
 echo "HoriSpotConnect Preview | quality=$hori_mode | Spotify FLAC access=UNAVAILABLE" >&2
 echo "Connect device suffix: [HoriSpot]; HomePod delivery and bit-perfect require acceptance." >&2
@@ -22,9 +25,19 @@ if [[ -z "$hori_interface" && -f "$hori_home/state/interface.request" ]]; then
   IFS= read -r hori_interface < "$hori_home/state/interface.request" || true
   rm -- "$hori_home/state/interface.request"
 fi
+# Refresh receiver capabilities even when the caller explicitly selected a bind.
+"$hori_version/bin/hori-discover" --seconds 3 --match HomePod > "$hori_home/state/discovery.json"
 if [[ -z "$hori_interface" ]]; then
-  "$hori_version/bin/hori-discover" --seconds 3 --match HomePod > "$hori_home/state/discovery.json"
   hori_interface=$(plutil -extract devices.0.interface raw -o - "$hori_home/state/discovery.json" 2>/dev/null || true)
+  # A receiver can be advertised on several interfaces. Its first Bonjour
+  # result is not necessarily the interface the OS routes to that receiver.
+  hori_receiver_host=$(plutil -extract devices.0.host raw -o - "$hori_home/state/discovery.json" 2>/dev/null || true)
+  if [[ "$hori_receiver_host" =~ ^[[:alnum:]_.-]+[.]local[.]?$ ]]; then
+    hori_route_interface=$(/sbin/route -n get "$hori_receiver_host" 2>/dev/null | awk '/^[[:space:]]*interface:/{print $2; exit}' || true)
+    if [[ -n "$hori_route_interface" && -n $(/usr/sbin/ipconfig getifaddr "$hori_route_interface" 2>/dev/null || true) ]]; then
+      hori_interface="$hori_route_interface"
+    fi
+  fi
   if [[ -z "$hori_interface" ]]; then
     echo "HOMEPOD_NOT_DISCOVERED: waiting on the current LAN; Spotify/HomePod playback is unverified." >&2
   fi

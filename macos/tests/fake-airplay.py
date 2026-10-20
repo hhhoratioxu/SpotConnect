@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026 hhhoratioxu. MIT. Local pipe fixture; never contacts a device.
+import json
 import os
 import select
 import sys
@@ -10,6 +11,8 @@ fifo = args[args.index('--cmdpipe') + 1]
 fd = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
 os.set_blocking(0, False)
 directory = os.environ['HORI_FAKE_CAPTURE']
+with open(directory + '/arguments.json', 'w') as arguments:
+    json.dump(args, arguments)
 mode = os.environ.get('HORI_FAKE_MODE', 'normal')
 print('[STATUS] connected', flush=True)
 print('Private fixture text must never be forwarded by the adapter', flush=True)

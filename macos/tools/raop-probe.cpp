@@ -7,6 +7,7 @@ extern "C" {
 #include "cross_net.h"
 #include "cross_log.h"
 }
+#include "../../spotraop/src/HoriAirplayOutput.h"
 #include <chrono>
 #include <charconv>
 #include <iostream>
@@ -14,10 +15,11 @@ extern "C" {
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <cmath>
 extern "C" { log_level raop_loglevel = lINFO, util_loglevel = lINFO; }
 int main(int argc, char** argv) {
   struct raopcl_s* sender = nullptr;
-  bool ssl = false, connected = false;
+    bool ssl = false, connected = false, native = false, tone = false;
   try {
     std::string bind, host, file, model, codecName = "ALAC";
     raop_codec_t codec = RAOP_ALAC;
@@ -25,12 +27,15 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
       if (arg == "--help") {
-        std::cout << "hori-raop-probe --bind IPV4 --host IPV4 --model ADVERTISED_MODEL [--port N] [--local-flac FILE] [--codec alac|alac_raw] [--verbose]\n"
-                     "Default: test only the RAOP session, preserve device volume, then disconnect.\n"
+        std::cout << "hori-raop-probe --bind IPV4 --host IPV4 --model ADVERTISED_MODEL [--port N] [--local-flac FILE | --tone] [--codec alac|alac_raw] [--native] [--verbose]\n"
+                     "Default: test only the session, then disconnect. Legacy preserves volume; native uses 20%.\n"
                      "Optional local FLAC sends at most 3 seconds at reduced sample amplitude.\n"
+                     "--tone sends six seconds of original alternating PCM; --native uses AirPlay 2 / NTP.\n"
                      "No Spotify source or end-to-end bit-perfect claim.\n"; return 0;
       }
       if (arg == "--verbose") { raop_loglevel = lDEBUG; continue; }
+      if (arg == "--native") { native = true; continue; }
+      if (arg == "--tone") { tone = true; continue; }
       if (i + 1 >= argc) throw std::invalid_argument("argument needs a value");
       const std::string value = argv[++i];
       if (arg == "--bind") bind = value;
@@ -48,6 +53,8 @@ int main(int argc, char** argv) {
           throw std::invalid_argument("invalid port");
       } else throw std::invalid_argument("invalid argument");
     }
+    if (tone && !file.empty()) throw std::invalid_argument("choose --tone or --local-flac");
+    if (native && codec != RAOP_ALAC) throw std::invalid_argument("native sender uses its ALAC encoder");
     in_addr local{}, peer{};
     if (inet_pton(AF_INET, bind.c_str(), &local) != 1 || inet_pton(AF_INET, host.c_str(), &peer) != 1 || model.empty())
       throw std::invalid_argument("require literal LAN IPv4 addresses and the actual advertised model");
@@ -64,35 +71,52 @@ int main(int argc, char** argv) {
                            RAOP_CLEAR, false, nullptr, nullptr, et, nullptr,
                            model.c_str(), 44100, 16, 2, -40.0f);
     if (!sender) throw std::runtime_error("RAOP sender creation failed");
-    connected = raopcl_connect(sender, peer, port, false); // Never set the device's volume.
+    if (native && !hori_output_register(sender, local, model.c_str()))
+      throw std::runtime_error("Native output is available only for the tested HomePod 2 model");
+    connected = raopcl_connect(sender, peer, port, false); // Legacy preserves volume; native explicitly starts at 20%.
     if (!connected) throw std::runtime_error("HomePod rejected or did not complete this RAOP session");
     std::uint64_t frames = 0;
-    if (pcm) {
-      const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(8);
+    if (pcm || tone) {
+      const auto maximum = 44100 * (tone ? 6 : 3);
+      const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(tone ? 16 : 8);
       std::vector<std::int16_t> pending;
       std::size_t offset = 0;
-      while (frames < 44100 * 3 && std::chrono::steady_clock::now() < deadline) {
-        if (pending.empty() || offset == pending.size()) { pending = pcm->read(); offset = 0; }
+      while (frames < static_cast<uint64_t>(maximum) && std::chrono::steady_clock::now() < deadline) {
+        if (pending.empty() || offset == pending.size()) {
+          if (tone) {
+            const auto count = std::min<uint64_t>(352, maximum - frames);
+            pending.resize(count * 2);
+            for (size_t i = 0; i < count; ++i) {
+              const auto frame = frames + i;
+              const double hz = (frame / 44100) % 2 ? 660 : 440;
+              const double envelope = (std::min)({1.0, frame / 2205.0, (maximum - frame - 1) / 2205.0});
+              const auto sample = static_cast<int16_t>(32767 * 0.15 * envelope * std::sin(2 * 3.141592653589793 * hz * frame / 44100));
+              pending[2*i] = pending[2*i+1] = sample;
+            }
+          } else pending = pcm->read();
+          offset = 0;
+        }
         if (pending.empty()) break;
         if (!raopcl_accept_frames(sender)) { std::this_thread::sleep_for(std::chrono::milliseconds(5)); continue; }
         const auto count = std::min<std::size_t>(
-            std::min<std::size_t>(352, (pending.size() - offset) / 2), 44100 * 3 - frames);
+            std::min<std::size_t>(352, (pending.size() - offset) / 2), maximum - frames);
         std::vector<std::int16_t> quiet(count * 2);
-        for (std::size_t i = 0; i < quiet.size(); ++i) quiet[i] = pending[offset + i] / 64;
+        for (std::size_t i = 0; i < quiet.size(); ++i) quiet[i] = pending[offset + i] / (tone ? 1 : 64);
         std::uint64_t playtime = 0;
         if (!raopcl_send_chunk(sender, reinterpret_cast<uint8_t*>(quiet.data()), count, &playtime))
           throw std::runtime_error("RAOP sample send failed");
         frames += count; offset += quiet.size();
       }
       if (!frames) throw std::runtime_error("RAOP accepted no audio frames");
-      std::this_thread::sleep_for(std::chrono::seconds(2));
+      std::this_thread::sleep_for(std::chrono::seconds(native ? 5 : 2));
     }
     const bool senderSane = raopcl_is_sane(sender);
     raopcl_disconnect(sender); raopcl_destroy(sender); sender = nullptr;
     cross_ssl_free(); ssl = false;
     std::cout << "{\"raop_session_accepted\":true,\"source\":"
-              << (pcm ? "\"local_FLAC\"" : "\"none_connect_only\"")
-              << ",\"wire_codec\":\"AppleLossless\",\"encoder_requested\":\"" << codecName
+              << (tone ? "\"original_local_PCM\"" : pcm ? "\"local_FLAC\"" : "\"none_connect_only\"")
+              << ",\"protocol_requested\":\"" << (native ? "AirPlay2_NTP" : "legacy_RAOP")
+              << "\",\"wire_codec\":\"AppleLossless\",\"encoder_requested\":\"" << codecName
               << "\",\"sender_sane\":" << (senderSane ? "true" : "false")
               << ",\"sample_rate\":44100,\"bits\":16,\"channels\":2,"
                  "\"frames_submitted\":" << frames

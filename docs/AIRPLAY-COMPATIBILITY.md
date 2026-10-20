@@ -1,6 +1,6 @@
 # AirPlay compatibility investigation / AirPlay 兼容性排查
 
-2026-10-15, Asia/Shanghai. Experimental. No audible pass or Spotify FLAC claim.
+Updated 2026-10-20, Asia/Taipei. Experimental. Local tone and real music are separate.
 
 The actual HomePod's AirPlay TXT advertises model AudioAccessory6,1 and osvers 27.2.
 Legacy RAOP accepted ALAC / 44100 Hz / 16-bit stereo. Real Spotify Vorbis decoding
@@ -30,7 +30,8 @@ was inspected separately. Tagged source commit:
 notices were read; no code, license notices or dependency history were replaced.
 The official macOS arm64 asset passed its published SHA256SUMS:
 `6d460ad08562844d978f337bee28a79b0eea390c84c239b5d66f55624e27d719`.
-It currently remains a separate local diagnostic, not a bundled HoriSpot backend.
+At that investigation stage it remained a separate local diagnostic. The
+2026-10-20 candidate below bundles the unchanged pinned sender.
 
 A bounded native AirPlay 2 / NTP test with original local s16le PCM established
 the encrypted session, reported audio buffered, acknowledged START, and disconnected
@@ -81,7 +82,25 @@ flush acknowledgments and supervises child exit. Five packaged executables retai
 signatures and source/license references. Native metadata/artwork propagation and
 HomePod button feedback have not been implemented for this candidate.
 
-Four new synthetic child-process tests verify exact PCM pipe bytes, control
-commands and warm flush, child failure, and bounded pre-start buffering. Full
-native and project ASan/UB suites pass 56/56. Real Spotify music and controls on
-the new adapter remain pending until the installed candidate is exercised.
+Seven synthetic child-process tests verify exact PCM pipe bytes, control
+commands and warm flush, child failure, bounded pre-start buffering, and selection
+of only the actual peer's advertised properties. Full native and project ASan/UB
+suites pass 59/59; changed adapter static analysis reports no findings.
+
+Initial installed integrated music attempts were still silent. Explicit native
+connect probes succeeded on the OS route's Ethernet interface but timed out on
+Wi-Fi. The first launcher had selected the first Bonjour result, which was not
+necessarily that route. After a temporary Ethernet selection, one real-song
+attempt was paused by a controller command before its planned audible start.
+A later locally requested resume submitted about ten seconds of cumulative PCM
+and then stalled; receiver audibility did not pass.
+
+The subsequent fixes prefer the OS route, refresh actual discovery TXT even with
+an explicit bind, and forward only peer-matched advertised fields to the sender.
+The CLI's DURATION/PROGRESS contract uses seconds; the adapter's millisecond input
+is now converted and tested. Sender media-consumption status is reported separately
+from PCM submission. With these changes the same integrated adapter submitted all
+264,600 frames of a six-second original tone and reported consumption advancing to
+about 5.4 seconds. This establishes that tested local pipeline's forward progress;
+its acoustic confirmation and the corrected real-music result remain pending.
+The earlier direct-tone audible PASS is not substituted for those missing results.

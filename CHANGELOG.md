@@ -5,8 +5,11 @@
 - A fresh native AirPlay 2/NTP original-tone test was audibly confirmed by the user.
 - Route the tested HomePod 2 model through a pinned official native sender, with a bounded PCM pipe and supervised lifecycle; retain explicit legacy selection.
 - Preserve upstream sender source history, GPL and third-party notices. No administrator clock service is required.
-- Add four independent transport/control/failure/buffering tests: native and project ASan/UB suites 56/56 PASS.
-- Real Spotify music/control acceptance on this new path is pending. Spotify FLAC remains unavailable.
+- Select the OS route to the receiver instead of relying on Bonjour result order across Ethernet/Wi-Fi; pass peer-matched actual receiver TXT to the native sender.
+- Convert progress/duration milliseconds to the sender's documented seconds contract; add media-consumption diagnostics without equating them with audible output.
+- Add seven independent PCM/control/failure/buffering/TXT tests: native and project ASan/UB suites 59/59 PASS; changed adapter static analysis has no diagnostics.
+- A corrected integrated six-second original-tone test submitted 264,600 frames and consumed about 5.4 seconds of media. Its acoustic confirmation is pending.
+- Initial integrated real-music attempts still failed the audible check. Corrected music/control acceptance remains pending. Spotify FLAC remains unavailable.
 
 ## 0.1.0-preview.3 — 2026-10-15
 

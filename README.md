@@ -20,6 +20,12 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 曲目元数据、音频密钥、CDN 下载和 Vorbis 解码均已通过。用户仍报告歌曲无声，
 因此 HomePod 音乐输出验收为 FAIL；真实控制与连续播放仍未验收。
 
+2026-10-20 分支上的 Preview.4 候选版加入原生 AirPlay 2 / NTP 发送端。本地原创
+6 秒交替测试音已得到用户明确的可听确认，无需管理员时钟进程。首次完整适配层
+的歌曲复测仍无声；随后修正了有线/Wi-Fi 路由选择、实际接收端 TXT 传递和进度
+单位，完整适配层的测试音媒体进度已推进到约 5.4 秒。修正后的歌曲发声仍待验收，
+不能把该本地测试结果当作 Spotify 音乐或 Lossless 成功。
+
 ### 音质与支持矩阵
 
 | 功能 | 当前实际状态 |
@@ -36,6 +42,7 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 | Spotify Connect 账号会话 | PASS；取得真实曲目元数据和音频密钥，元数据选中 Vorbis 320 |
 | Spotify Vorbis 下载与解码 | PASS；自己的应用 token、CDN 地址和实际解码器：Vorbis 320 / 44.1 kHz / stereo / 16-bit PCM |
 | RAOP 输出 | 返回局域网后再次实测 HomePod 接受 ALAC 会话，44.1 kHz / 16-bit / stereo |
+| Preview.4 原生 AirPlay 2 / NTP | 仅对已测 HomePod 2 型号启用；独立本地测试音已确认可听；完整适配层与歌曲需分别验收 |
 | 本地 FLAC → PCM → RAOP | 实际提交 44,100 帧；低幅度测试，可听输出 UNVERIFIED |
 | Spotify → HomePod 音乐 | FAIL for audible output；取流与解码通过，用户再次报告无声，继续定位发送/接收兼容性 |
 | 暂停 / Seek / 切歌 / 音量 | 控制路径保留；离线 Seek 测试 PASS，真实 Spotify 控制 UNVERIFIED |
@@ -70,7 +77,8 @@ bash HoriSpotConnect-0.1.0-preview.3-macos-arm64/scripts/install.sh
 AIRPLAY_OUTPUT 给出发送契约与请求编码，libraop 报告实际 ALAC/PCM 编码状态。
 握手接受与可听输出分别记录。
 
-启动器依据 HomePod 的 Bonjour 接口选择 LAN，避免误选本机虚拟网络接口。
+启动器发现 HomePod 后优先采用系统到该接收端的路由接口，避免多网卡 Bonjour
+结果顺序导致误选 Wi-Fi；同时刷新实际接收端能力信息供原生发送端使用。
 只绑定本程序；可用 HORISPOT_INTERFACE=en7 等覆盖，未修改系统代理或网络配置。
 Preview.2 检测绑定地址失效后清理连接，登录启动项以 30 秒节流重新发现并绑定。
 手动启动检查当前接口与地址，切换音质仍交由已有启动项管理。热点上没有 HomePod
@@ -125,9 +133,10 @@ bash scripts/package-macos.sh
 ```
 
 Git 中保留源码和 submodule 精确引用，产物附 SOURCE-MANIFEST.json 与许可证。
-当前完整套件 **52/52 PASS**，地址/未定义行为检查 **52/52 PASS**；覆盖原始
+当前分支完整套件 **59/59 PASS**，地址/未定义行为检查 **59/59 PASS**；覆盖原始
 PCM 逐样本比较、CDN/AES/HTTP Range 路径、Vorbis 96/160/320 解码与 Seek，
-以及 4 项隔离的 Bonjour 接口生命周期、4 项 ALAC 编码/解码测试；不会修改系统网络。
+以及 4 项隔离的 Bonjour 接口生命周期、4 项 ALAC 编码/解码测试、7 项原生发送
+适配层检查（精确 PCM、控制、失败、限流及接收端能力匹配）；不会修改系统网络。
 音频为原创合成、CC0-1.0，未分发 Spotify 商业录音。
 [完整测试记录](docs/TEST-RESULTS.md) · [真实环境验收](docs/ACCEPTANCE.md)
 
@@ -164,10 +173,20 @@ The user again reported silence: end-to-end music output is **FAIL**, not an
 accepted playback result. Application credentials do not grant FLAC rights or
 guarantee access for another app/account under Development Mode restrictions.
 
+The 2026-10-20 Preview.4 candidate adds the pinned official native AirPlay 2/NTP
+sender for the tested HomePod 2 model. The user explicitly heard the independent
+six-second original tone; this required no privileged clock process. The first
+integrated real-music attempts still failed the audible check. Subsequent fixes
+select the OS route to the receiver, forward only its actual discovered TXT, and
+convert progress milliseconds to the sender's seconds contract. The corrected
+integrated local-tone test submitted 264,600 frames and advanced sender media
+consumption to about 5.4 seconds; its acoustic confirmation and corrected real
+music remain separate acceptance gates. No Spotify FLAC access is added.
+
 Preview.2 detects a disappeared bind address and cleans up before the user
 LaunchAgent retries discovery, with a 30-second throttle. Manual startup validates
 its interface/address and preserves LaunchAgent management when changing modes.
-The 52-test native and instrumented suites include four isolated Bonjour lifecycle
+The 59-test native and instrumented suites include four isolated Bonjour lifecycle
 tests. The separate real return-to-LAN observation confirms this recovery case;
 it does not prove extended streaming stability or every network-change scenario.
 Preview.3 adds bounded PCM submission/signal statistics, retains pending PCM when

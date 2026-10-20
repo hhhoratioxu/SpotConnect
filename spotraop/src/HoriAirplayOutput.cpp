@@ -30,6 +30,9 @@ extern "C" {
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include <fstream>
+#include <netdb.h>
+#include "nlohmann/json.hpp"
 
 extern char** environ;
 namespace {
@@ -49,6 +52,39 @@ std::string helperPath() {
     std::vector<char> buffer(size + 1);
     if (_NSGetExecutablePath(buffer.data(), &size)) return {};
     return (std::filesystem::path(buffer.data()).parent_path() / "hori-airplay").string();
+}
+std::string receiverTxt(in_addr peer) {
+    const char* cache = std::getenv("HORISPOT_AIRPLAY_DISCOVERY");
+    if (!cache) return {};
+    try {
+        std::error_code error;
+        if (std::filesystem::file_size(cache, error) > 256 * 1024 || error) return {};
+        std::ifstream file(cache);
+        auto root = nlohmann::json::parse(file);
+        for (const auto& device : root.at("devices")) {
+            if (device.at("service").get<std::string>().find("._airplay._tcp.") == std::string::npos) continue;
+            const auto host = device.at("host").get<std::string>();
+            addrinfo hints{}, *addresses = nullptr;
+            hints.ai_family = AF_INET; hints.ai_socktype = SOCK_STREAM;
+            if (getaddrinfo(host.c_str(), nullptr, &hints, &addresses)) continue;
+            bool matches = false;
+            for (auto* item = addresses; item; item = item->ai_next)
+                if (reinterpret_cast<sockaddr_in*>(item->ai_addr)->sin_addr.s_addr == peer.s_addr) matches = true;
+            freeaddrinfo(addresses);
+            if (!matches) continue;
+            std::string result;
+            const auto& advertised = device.at("advertised");
+            for (const char* key : {"model", "osvers", "srcvers", "features", "flags", "igl", "pgid", "tsid"}) {
+                if (!advertised.contains(key) || !advertised.at(key).is_string()) continue;
+                const auto value = advertised.at(key).get<std::string>();
+                if (value.size() > 512 || value.find_first_of("\r\n\t ") != std::string::npos) continue;
+                if (!result.empty()) result += ' ';
+                result += std::string(key) + '=' + value;
+            }
+            return result;
+        }
+    } catch (...) { /* A malformed cache cannot change the selected peer or run code. */ }
+    return {};
 }
 struct NativeOutput {
     std::mutex lifecycle, mutex;
@@ -88,6 +124,12 @@ struct NativeOutput {
         } else if (line.rfind("[STATUS] started ", 0) == 0) {
             started = true;
             std::fprintf(stderr, "AIRPLAY2_STATUS state=started audible_output=UNVERIFIED\n");
+        } else if (line.rfind("[STATUS] playing elapsed_ms=", 0) == 0) {
+            unsigned long long elapsed = 0;
+            if (std::sscanf(line.c_str(), "[STATUS] playing elapsed_ms=%llu", &elapsed) == 1)
+                std::fprintf(stderr, "AIRPLAY2_MEDIA elapsed_ms=%llu audible_output=UNVERIFIED\n", elapsed);
+        } else if (line.rfind("[STATUS] paused", 0) == 0) {
+            std::fprintf(stderr, "AIRPLAY2_STATUS state=paused\n");
         } else if (line.rfind("[STATUS] error", 0) == 0) {
             failed = true; changed.notify_all();
             std::fprintf(stderr, "AIRPLAY2_ERROR sender_reported_error PCM_pending=retained\n");
@@ -153,12 +195,13 @@ struct NativeOutput {
         }
         char temp[] = "/tmp/horispot-ap2.XXXXXX";
         const char* path = mkdtemp(temp);
-        if (!path) return false;
+        if (!path) { std::fprintf(stderr, "AIRPLAY2_ERROR stage=temp_directory errno=%d\n", errno); return false; }
         directory = path; fifo = directory + "/control";
-        if (mkfifo(fifo.c_str(), 0600)) { cleanup(); return false; }
+        if (mkfifo(fifo.c_str(), 0600)) { std::fprintf(stderr, "AIRPLAY2_ERROR stage=control_fifo errno=%d\n", errno); cleanup(); return false; }
         control = open(fifo.c_str(), O_RDWR | O_NONBLOCK | O_CLOEXEC);
         int audio[2]{-1,-1}, logs[2]{-1,-1};
         if (control < 0 || pipe(audio) || pipe(logs)) {
+            std::fprintf(stderr, "AIRPLAY2_ERROR stage=pipes errno=%d\n", errno);
             for (int fd : audio) if (fd >= 0) close(fd);
             for (int fd : logs) if (fd >= 0) close(fd);
             cleanup(); return false;
@@ -168,7 +211,10 @@ struct NativeOutput {
         std::vector<std::string> args{helper, "--protocol", "airplay2", "--ap2-native",
             "--timing", "ntp", "--port", std::to_string(port), "--if", bind,
             "--volume", std::to_string(volume), "--samplerate", "44100", "--bitdepth", "16",
-            "--channels", "2", "--cmdpipe", fifo, address};
+            "--channels", "2", "--cmdpipe", fifo};
+        const auto txt = receiverTxt(peer);
+        if (!txt.empty()) { args.push_back("--txt"); args.push_back(txt); }
+        args.push_back(address);
         std::vector<char*> argv;
         for (auto& arg : args) argv.push_back(arg.data()); argv.push_back(nullptr);
         posix_spawn_file_actions_t actions; posix_spawn_file_actions_init(&actions);
@@ -181,7 +227,7 @@ struct NativeOutput {
         posix_spawn_file_actions_destroy(&actions); posix_spawnattr_destroy(&attributes);
         close(audio[0]); close(logs[1]);
         input = audio[1]; output = logs[0];
-        if (error) { child = -1; cleanup(); return false; }
+        if (error) { std::fprintf(stderr, "AIRPLAY2_ERROR stage=spawn errno=%d\n", error); child = -1; cleanup(); return false; }
         nonblocking(input); nonblocking(output);
         { std::lock_guard lock(mutex); running = true; paused = failed = false; }
         worker = std::thread([this]{ run(); });
@@ -189,7 +235,7 @@ struct NativeOutput {
         changed.wait_for(lock, std::chrono::seconds(6), [this]{return connected || failed;});
         const bool ok = connected && !failed;
         lock.unlock();
-        if (!ok) cleanup();
+        if (!ok) { std::fprintf(stderr, "AIRPLAY2_ERROR stage=connect_timeout\n"); cleanup(); }
         return ok;
     }
     void cleanup() { // lifecycle is held; the worker may still need mutex.
@@ -258,7 +304,11 @@ bool hori_output_register(raopcl_s* p, in_addr bind, const char* model) {
 }
 bool hori_output_native(raopcl_s* p) { return static_cast<bool>(find(p)); }
 bool hori_output_connect(raopcl_s* p, in_addr ip, uint16_t port, bool volume) {
-    if (auto n = find(p)) return n->connect(ip, port);
+    if (auto n = find(p)) {
+        std::fprintf(stderr, "AIRPLAY2_CONNECT route=native\n");
+        return n->connect(ip, port);
+    }
+    std::fprintf(stderr, "AIRPLAY2_CONNECT route=legacy\n");
     return raopcl_connect(p, ip, port, volume);
 }
 bool hori_output_disconnect(raopcl_s* p) { if (auto n=find(p)) return n->disconnect(); return raopcl_disconnect(p); }
@@ -278,7 +328,7 @@ bool hori_output_is_playing(raopcl_s* p){if(auto n=find(p)){std::lock_guard lock
 void hori_output_pause(raopcl_s* p){if(auto n=find(p)){std::lock_guard lock(n->mutex);n->progressOffset+=n->played()*1000/44100;n->paused=true;n->command("ACTION=PAUSE\n");}else raopcl_pause(p);}
 void hori_output_stop(raopcl_s* p){if(auto n=find(p)){std::lock_guard lock(n->mutex);n->command("ACTION=PAUSE\n");}else raopcl_stop(p);}
 uint64_t hori_output_get_progress_ms(raopcl_s* p){if(auto n=find(p)){std::lock_guard lock(n->mutex);return n->progressOffset+n->played()*1000/44100;}return raopcl_get_progress_ms(p);}
-bool hori_output_set_progress_ms(raopcl_s* p,uint32_t elapsed,uint32_t duration){if(auto n=find(p)){std::lock_guard lock(n->mutex);n->progressOffset=elapsed;n->duration=duration;return n->command("DURATION="+std::to_string(duration)+"\nPROGRESS="+std::to_string(elapsed)+"\n");}return raopcl_set_progress_ms(p,elapsed,duration);}
+bool hori_output_set_progress_ms(raopcl_s* p,uint32_t elapsed,uint32_t duration){if(auto n=find(p)){std::lock_guard lock(n->mutex);n->progressOffset=elapsed;n->duration=duration;return n->command("DURATION="+std::to_string(duration/1000)+"\nPROGRESS="+std::to_string(elapsed/1000)+"\n");}return raopcl_set_progress_ms(p,elapsed,duration);}
 bool hori_output_set_volume(raopcl_s* p,float db){if(auto n=find(p)){std::lock_guard lock(n->mutex);n->volume=db<=-30?0:static_cast<unsigned>(std::clamp((db+30)*100/30,0.0f,100.0f));return !n->connected||n->command("VOLUME="+std::to_string(n->volume)+"\n");}return raopcl_set_volume(p,db);}
 }
 #endif

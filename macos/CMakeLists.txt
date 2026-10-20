@@ -51,8 +51,9 @@ foreach(case queue_auto queue_lossless queue_320 queue_missing_format queue_rest
   set_tests_properties(${case} PROPERTIES TIMEOUT 20)
 endforeach()
 file(GLOB HORI_CROSS_SOURCES ../common/crosstools/src/*.c)
-add_executable(hori-raop-probe tools/raop-probe.cpp ${HORI_CROSS_SOURCES})
+add_executable(hori-raop-probe tools/raop-probe.cpp ../spotraop/src/HoriAirplayOutput.cpp ${HORI_CROSS_SOURCES})
 target_include_directories(hori-raop-probe PRIVATE ../common/crosstools/src
+  ../common/cspot/cspot/bell/external/nlohmann_json/single_include
   ../spotraop/libraop/targets/include ../spotraop/libopenssl/targets/macos/arm64/include
   ../common/libpupnp/targets/macos/arm64/include/upnp
   ../common/libpupnp/targets/macos/arm64/include/ixml)
@@ -65,6 +66,7 @@ target_link_libraries(hori-raop-probe PRIVATE hori_audio
 add_executable(hori-output-tests tests/airplay-output.cpp
   ../spotraop/src/HoriAirplayOutput.cpp ${HORI_CROSS_SOURCES})
 target_include_directories(hori-output-tests PRIVATE ../common/crosstools/src
+  ../common/cspot/cspot/bell/external/nlohmann_json/single_include
   ../spotraop/libraop/targets/include ../spotraop/libopenssl/targets/macos/arm64/include)
 target_compile_definitions(hori-output-tests PRIVATE USE_SSL SSL_STATIC_LIB _GNU_SOURCE)
 target_compile_options(hori-output-tests PRIVATE -Wall -Wextra -Wpedantic)
@@ -72,7 +74,7 @@ target_link_libraries(hori-output-tests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../spotraop/libraop/targets/macos/arm64/libraop.a
   ${CMAKE_CURRENT_SOURCE_DIR}/../common/libcodecs/targets/macos/arm64/libcodecs.a
   ${CMAKE_CURRENT_SOURCE_DIR}/../spotraop/libopenssl/targets/macos/arm64/libopenssl.a)
-foreach(case pcm controls failure bounded)
+foreach(case pcm controls failure bounded txt_match txt_mismatch txt_malformed)
   add_test(NAME airplay2_${case} COMMAND hori-output-tests ${case}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/fake-airplay.py)
   set_tests_properties(airplay2_${case} PROPERTIES TIMEOUT 15)

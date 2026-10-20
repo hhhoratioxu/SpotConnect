@@ -1,13 +1,27 @@
 # Test results / 测试结果
 
-2026-10-15, Asia/Shanghai. Preview / Experimental. No Spotify FLAC success claimed.
+Updated 2026-10-20, Asia/Taipei. Preview / Experimental. No Spotify FLAC success claimed.
+
+Latest branch candidate: **59/59 native and 59/59 project ASan/UB tests PASS**.
+The seven native-output tests cover binary-exact PCM, the independent CLI seconds
+contract, flush/resume, child failure, bounded prefill and actual receiver TXT
+selection/mismatch/malformed data. Adapter static analysis: zero findings. Prebuilt
+dependencies are not sanitizer-instrumented. Historical Preview.3 evidence below
+remains identified by version; it is not a test of the new native transport.
+
+On 2026-10-20 the user explicitly heard a six-second original tone from the direct
+native AirPlay 2/NTP diagnostic. That is a local-audio audible PASS. Initial
+integrated Spotify attempts still failed the audible check. The corrected adapter
+then sent 264,600 original local PCM frames with media consumption advancing to
+about 5.4 seconds. Its audible result and the corrected Spotify music path are
+pending; do not promote submission/consumption counters to audible acceptance.
 
 | Check | Executed result | Scope / limit |
 | --- | --- | --- |
 | Core/fork/source audit | PASS | Live GitHub API and local Git; exact hashes in UPSTREAM-AUDIT.md |
 | ARM64 native compilation | PASS | AppleClang 21 / C++20, bridge and diagnostics |
-| Complete offline suite | 52/52 PASS | 28 FLAC/policy/PCM + 16 cspot metadata/CDN/AES/Vorbis + 4 Bonjour lifecycle + 4 ALAC roundtrip tests |
-| Address + UB instrumentation | 52/52 PASS | Project source instrumented; precompiled dependency archives not instrumented |
+| Complete offline suite | 59/59 PASS | 28 FLAC/policy/PCM + 16 cspot metadata/CDN/AES/Vorbis + 4 Bonjour lifecycle + 4 ALAC roundtrip + 7 native output tests |
+| Address + UB instrumentation | 59/59 PASS | Project source instrumented; precompiled dependency archives not instrumented |
 | Changed bridge static analysis | No new diagnostics | PCM C++ translation unit: 0; C main: same 19 diagnostic messages as pre-change baseline, retained as existing analyzer findings |
 | Shell and package checks | PASS | Syntax, isolated/live installation, re-extraction, hashes, signatures |
 | LaunchAgent / mode lifecycle | PASS | Idempotent AUTO, VORBIS_320/AUTO switches, refusal gates and live reinstall; no music playback implied |
@@ -17,7 +31,7 @@
 | ZeroConf HTTP getInfo | PASS | Returned status 101 / OK and actual receiver name |
 | HomePod RAOP session | PASS | Accepted 44.1kHz/16-bit/stereo AppleLossless session |
 | Local FLAC → PCM → RAOP | PASS for sender submission | Original 24-bit fixture, 44,100 frames; low amplitude test |
-| Actual audible output | UNVERIFIED | User did not notice the quiet local tone; no positive manual/acoustic confirmation |
+| Actual local audible output | PASS for direct native/NTP tone | User explicitly heard the 2026-10-20 original six-second tone; corrected integrated adapter acoustic check pending |
 | Spotify UI device picker | PASS for manual selection | User selected the HoriSpot target after returning to the HomePod LAN and reported silence |
 | Bind disappearance / query shutdown | 4/4 PASS | Process-local simulated interface loss and real scoped Bonjour query; no system network changes |
 | Physical return to HomePod LAN | PASS for this recovery case | Existing managed service recovered native discovery, renderer creation and Connect advertisement |

@@ -96,19 +96,24 @@ struct NativeOutput {
     void run() {
         std::string pending;
         while (true) {
+            // Only this worker reads this descriptor; cleanup closes it after
+            // joining. Drain outside the shared state lock, even if an OS call
+            // were unexpectedly slow despite O_NONBLOCK.
+            std::vector<std::string> lines;
+            char bytes[8192]; ssize_t count;
+            while ((count = read(output, bytes, sizeof(bytes))) > 0) {
+                pending.append(bytes, count);
+                size_t newline;
+                while ((newline = pending.find('\n')) != std::string::npos) {
+                    if (newline <= 4096) lines.push_back(pending.substr(0, newline));
+                    pending.erase(0, newline + 1);
+                }
+                if (pending.size() > 65536) pending.clear();
+            }
             {
                 std::unique_lock lock(mutex);
                 if (!running) break;
-                char bytes[8192]; ssize_t count;
-                while ((count = read(output, bytes, sizeof(bytes))) > 0) {
-                    pending.append(bytes, count);
-                    size_t newline;
-                    while ((newline = pending.find('\n')) != std::string::npos) {
-                        if (newline <= 4096) status(pending.substr(0, newline));
-                        pending.erase(0, newline + 1);
-                    }
-                    if (pending.size() > 65536) pending.clear();
-                }
+                for (const auto& line : lines) status(line);
                 int exitStatus = 0;
                 if (waitpid(child, &exitStatus, WNOHANG) == child) {
                     child = -1; running = connected = false; failed = true;

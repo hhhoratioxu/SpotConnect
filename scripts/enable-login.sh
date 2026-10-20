@@ -16,7 +16,10 @@ cat > "$hori_plist" <<XML
 <key>RunAtLoad</key><true/>
 <key>KeepAlive</key><dict><key>Crashed</key><true/><key>SuccessfulExit</key><false/></dict>
 <key>ThrottleInterval</key><integer>30</integer>
-<key>ProcessType</key><string>Background</string>
+<!-- Audio packet deadlines depend on timely wakeups. Background classification
+     coalesces the sender's 1 ms sleep to about 35 ms on the tested Mac. -->
+<key>ProcessType</key><string>Interactive</string>
+<key>LegacyTimers</key><true/>
 <key>StandardOutPath</key><string>$(escape_xml "$hori_home/logs/stdout.log")</string>
 <key>StandardErrorPath</key><string>$(escape_xml "$hori_home/logs/stderr.log")</string>
 </dict></plist>

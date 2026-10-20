@@ -104,3 +104,33 @@ from PCM submission. With these changes the same integrated adapter submitted al
 about 5.4 seconds. This establishes that tested local pipeline's forward progress;
 its acoustic confirmation and the corrected real-music result remain pending.
 The earlier direct-tone audible PASS is not substituted for those missing results.
+
+## 2026-10-20 interrupted real songs / Preview.5 scheduling fix
+
+The user subsequently confirmed hearing recognizable real Spotify song fragments,
+with interruptions. Fresh logs show actual Vorbis 320 decoding and about ten
+seconds of submitted PCM followed by a stall. The user agent had restarted after
+a network change with an empty discovery cache. Refreshing actual receiver TXT
+and cold reconnecting did not, by itself, resolve the stall.
+
+An unprivileged debugger inspection of only the native sender found CLI playing
+state, 3,339,991 queued silence-pad frames (about 75.7 seconds), and a delivery head
+about 76 seconds behind wall time. Its real PCM reader was waiting on a full ring.
+The installed bridge and child both had low scheduling priority; the LaunchAgent
+was explicitly classified Background. Local Apple launchd.plist documentation
+confirms that class applies resource limits and that LegacyTimers opts an
+Interactive job out of timer coalescing.
+
+A temporary same-Mac comparison ran 32 requested 1 ms sleeps in each configuration.
+Background averaged 34.8535 ms (28.7780–89.0150 ms); Interactive + LegacyTimers
+averaged 1.3296 ms (1.0200–2.7970 ms). The stream needs one 352-frame packet about
+every 7.98 ms. This reproduces a concrete scheduling defect that can prevent the
+old service from keeping its audio timeline supplied. Temporary timer jobs were
+removed; no administrator service, real-time scheduler or global power/network
+setting was installed.
+
+Preview.5 sets Interactive and LegacyTimers for this owned user LaunchAgent and
+waits/retries on an empty fresh discovery result. Live attempts to adjust the old
+process with taskpolicy did not resolve its stall, so the corrected job must be
+restarted. The real-song acoustic and continuous-stream result after that restart
+must be measured separately; timer measurements alone are not a playback pass.

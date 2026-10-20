@@ -1,5 +1,12 @@
 # HoriSpotConnect changelog
 
+## 0.1.0-preview.5 candidate — 2026-10-20
+
+- Fix the user LaunchAgent's audio scheduling: replace Background with Interactive and opt out of timer coalescing with LegacyTimers. A bounded same-Mac comparison measured requested 1 ms sleeps at 34.8535 ms mean in the previous Background configuration versus 1.3296 ms in the new configuration; audio packets represent about 7.98 ms each.
+- Refuse startup with an empty fresh HomePod discovery result (exit 75) so the existing user LaunchAgent retries instead of connecting without receiver capabilities.
+- The user confirmed recognizable real Spotify song fragments on Preview.4, with interruptions. Debugger inspection found a playing sender accumulating about 76 seconds of silence padding while real PCM stayed queued. Refreshing TXT alone did not resolve the stall.
+- Continuous real-song acceptance after the scheduling fix remains pending. No Spotify FLAC access is added; no administrator or global network/power settings are required.
+
 ## 0.1.0-preview.4 candidate — 2026-10-20
 
 - A fresh native AirPlay 2/NTP original-tone test was audibly confirmed by the user.

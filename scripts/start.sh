@@ -27,6 +27,11 @@ if [[ -z "$hori_interface" && -f "$hori_home/state/interface.request" ]]; then
 fi
 # Refresh receiver capabilities even when the caller explicitly selected a bind.
 "$hori_version/bin/hori-discover" --seconds 3 --match HomePod > "$hori_home/state/discovery.json"
+hori_discovered_count=$(plutil -extract count raw -o - "$hori_home/state/discovery.json" 2>/dev/null || true)
+if [[ ! "$hori_discovered_count" =~ ^[0-9]+$ || "$hori_discovered_count" -eq 0 ]]; then
+  echo "HOMEPOD_NOT_DISCOVERED: no fresh receiver capabilities; user LaunchAgent will retry discovery." >&2
+  exit 75
+fi
 if [[ -z "$hori_interface" ]]; then
   hori_interface=$(plutil -extract devices.0.interface raw -o - "$hori_home/state/discovery.json" 2>/dev/null || true)
   # A receiver can be advertised on several interfaces. Its first Bonjour

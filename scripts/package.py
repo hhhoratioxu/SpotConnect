@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-version = '0.1.0-preview.4'
+version = '0.1.0-preview.5'
 name = f'HoriSpotConnect-{version}-macos-arm64'
 build = Path(os.environ.get('HORI_NATIVE_BUILD', root / '.hori-build/native'))
 package = root / 'dist' / name

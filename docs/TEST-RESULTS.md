@@ -2,6 +2,16 @@
 
 Updated 2026-10-20, Asia/Taipei. Preview / Experimental. No Spotify FLAC success claimed.
 
+Preview.5 scheduling investigation: the user confirmed recognizable Spotify song
+fragments on Preview.4 but reported interruptions. The running Background sender
+had about 76 seconds of silence padding queued while its real PCM ring was full.
+A bounded temporary LaunchAgent experiment on the same Mac measured 32 requested
+1 ms sleeps per configuration: Background mean **34.8535 ms**, min 28.7780 ms,
+max 89.0150 ms; Interactive + LegacyTimers mean **1.3296 ms**, min 1.0200 ms,
+max 2.7970 ms. Each 352-frame audio packet is about 7.98 ms at 44.1 kHz. Both
+temporary jobs were removed after the comparison. The new scheduling is applied
+in Preview.5; continuous real-song playback after that fix remains pending.
+
 Latest branch candidate: **59/59 native and 59/59 project ASan/UB tests PASS**.
 The seven native-output tests cover binary-exact PCM, the independent CLI seconds
 contract, flush/resume, child failure, bounded prefill and actual receiver TXT
@@ -40,7 +50,7 @@ pending; do not promote submission/consumption counters to audible acceptance.
 | Own application setup / token | PASS | Owner confirmed creation/terms; private 0600 config; token HTTP 200, lifetime 3600s; bridge independently fetched a token |
 | Real Spotify CDN / Vorbis decoder | PASS | Signed CDN URL received, actual bytes opened by Vorbis decoder; OGG_VORBIS_320 / 44100 Hz / stereo / 16-bit PCM |
 | Premium / current FLAC permission | UNVERIFIED | Account-specific authorized FLAC source not tested |
-| Real Spotify → HomePod music | FAIL for audible output | Latest installed Preview.3 produced 28 PCM reports / 1,241,856 submitted frames, but the user again heard no music |
+| Real Spotify → HomePod music | Partial audible PASS; continuous playback FAIL on Preview.4 | User recognized song fragments with interruptions; Preview.5 scheduling fix awaits its own continuous playback check |
 | ALAC / raw ALAC local probes | PASS for bounded sender / timing | Each supplied 132,300 original local frames; five NTP reply logs each; no observed audio socket errors; audibility unconfirmed |
 | Exact ALAC sample roundtrip | 4/4 PASS | Same linked encoders plus Apple's reference decoder; signed extrema, independent stereo, full/short packets, zero padding |
 | Credential privacy | PASS | 74,283 tracked files, runtime logs, public Preview.2 and the verified Preview.3 package scanned; no app credential matches; no values/token output |

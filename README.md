@@ -26,6 +26,11 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 单位，完整适配层的测试音媒体进度已推进到约 5.4 秒。修正后的歌曲发声仍待验收，
 不能把该本地测试结果当作 Spotify 音乐或 Lossless 成功。
 
+随后用户确认 Preview.4 能播出可辨认的真实歌曲片段，但断断续续。已复现安装后的
+Background 作业调度问题：请求 1 ms 休眠实际平均 34.85 ms，慢于每包约 7.98 ms
+的音频节奏。Preview.5 改用 Interactive 作业及精确定时器，并在发现结果为空时
+等待重新发现。新配置定时器对照为平均 1.33 ms，连续歌曲播放仍待单独验收。
+
 ### 音质与支持矩阵
 
 | 功能 | 当前实际状态 |
@@ -44,7 +49,7 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 | RAOP 输出 | 返回局域网后再次实测 HomePod 接受 ALAC 会话，44.1 kHz / 16-bit / stereo |
 | Preview.4 原生 AirPlay 2 / NTP | 仅对已测 HomePod 2 型号启用；独立本地测试音已确认可听；完整适配层与歌曲需分别验收 |
 | 本地 FLAC → PCM → RAOP | 实际提交 44,100 帧；低幅度测试，可听输出 UNVERIFIED |
-| Spotify → HomePod 音乐 | FAIL for audible output；取流与解码通过，用户再次报告无声，继续定位发送/接收兼容性 |
+| Spotify → HomePod 音乐 | Preview.4 已确认可辨认歌曲片段，连续播放 FAIL；Preview.5 调度修正后待验收 |
 | 暂停 / Seek / 切歌 / 音量 | 控制路径保留；离线 Seek 测试 PASS，真实 Spotify 控制 UNVERIFIED |
 | 长时间连续播放 | UNVERIFIED |
 | HomePod 端到端 bit-perfect | UNVERIFIED；24→16 位和重采样会改变样本 |
@@ -52,13 +57,13 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 
 ### 安装与运行
 
-下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.4)，
+下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.5)，
 解压并运行 scripts/install.sh。只写入当前用户目录，不需要 sudo。
 
 ```sh
-curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.4/HoriSpotConnect-0.1.0-preview.4-macos-arm64.zip -o HoriSpotConnect.zip
+curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.5/HoriSpotConnect-0.1.0-preview.5-macos-arm64.zip -o HoriSpotConnect.zip
 ditto -xk HoriSpotConnect.zip .
-bash HoriSpotConnect-0.1.0-preview.4-macos-arm64/scripts/install.sh
+bash HoriSpotConnect-0.1.0-preview.5-macos-arm64/scripts/install.sh
 ```
 
 安装器验证 SHA-256 和签名，安装到 ~/Library/Application Support/HoriSpotConnect，
@@ -183,6 +188,14 @@ convert progress milliseconds to the sender's seconds contract. The corrected
 integrated local-tone test submitted 264,600 frames and advanced sender media
 consumption to about 5.4 seconds; its acoustic confirmation and corrected real
 music remain separate acceptance gates. No Spotify FLAC access is added.
+
+The user subsequently confirmed recognizable real song fragments on Preview.4,
+with interruptions. A same-Mac LaunchAgent experiment reproduced timer throttling:
+requested 1 ms sleeps averaged 34.85 ms with Background, versus 1.33 ms with
+Interactive and LegacyTimers. Preview.5 applies that tested scheduling configuration
+and retries an empty receiver discovery result. Continuous real music after this
+change remains a separate acceptance gate. No privileged scheduling or global
+power/network setting is used.
 
 Preview.2 detects a disappeared bind address and cleans up before the user
 LaunchAgent retries discovery, with a 30-second throttle. Manual startup validates

@@ -10,6 +10,7 @@
 - Add seven independent PCM/control/failure/buffering/TXT tests: native and project ASan/UB suites 59/59 PASS; changed adapter static analysis has no diagnostics.
 - A corrected integrated six-second original-tone test submitted 264,600 frames and consumed about 5.4 seconds of media. Its acoustic confirmation is pending.
 - Initial integrated real-music attempts still failed the audible check. Corrected music/control acceptance remains pending. Spotify FLAC remains unavailable.
+- Require macOS 14+ for the packaged native sender, verified from its Mach-O minimum OS; keep M4 and other OS versions explicitly unverified.
 
 ## 0.1.0-preview.3 — 2026-10-15
 

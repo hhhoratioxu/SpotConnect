@@ -3,6 +3,21 @@
 Checked live on 2026-10-15, Asia/Shanghai, through GitHub API and complete core Git
 histories. Source changes are distinguished from account/server evidence.
 
+Refreshed the two core repositories live on 2026-10-20 (Asia/Taipei). SpotConnect's
+latest default-branch commit is `a533cc39ea54a47a10504f0bfb0c92e30c34a4c1`, dated
+2026-10-15, adding CONTRIBUTING.md; the bridge is still based on the 0.20.11 code
+below. cspot remains at `99e5c95ad6d862a1b7845dda81fd9c8233b45b9f`. This audit does
+not turn contributor reports into this project's physical acceptance results.
+
+[SpotConnect PR #84](https://github.com/philippe44/SpotConnect/pull/84) and its
+[libraop PR #55](https://github.com/philippe44/libraop/pull/55) remain open and
+propose native AirPlay 2/NTP for OS 27 receivers. The PR describes rebuilt static
+archive requirements and unimplemented receiver controls. It has not been merged
+or adopted wholesale in this fork; the Preview.4 candidate instead supervises the
+pinned Music Assistant sender. [Issue #89](https://github.com/philippe44/SpotConnect/issues/89)
+records a separate intermittent sender handover report. None of these changes adds
+a Spotify FLAC provider or proves this HomePod's music output.
+
 | Repository | Audited source and role | License |
 | --- | --- | --- |
 | philippe44/SpotConnect | 227884c68c6d2706281c630e4e041e02a04d1afa, 0.20.11, 2026-10-03 | MIT |

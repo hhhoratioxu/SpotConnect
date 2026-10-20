@@ -47,6 +47,7 @@ for item in ('README.md', 'CHANGELOG.md', 'LICENSE'):
     shutil.copy2(root / item, package / item)
 
 manifest = {'version': version, 'status': 'Preview / Experimental',
+            'macos_minimum': '14.0', 'architecture': 'arm64',
             'repository': 'https://github.com/hhhoratioxu/SpotConnect',
             'branch': 'feature/spotify-lossless', 'commit': run('git', 'rev-parse', 'HEAD'),
             'spotify_flac_access': 'UNAVAILABLE', 'submodules': []}

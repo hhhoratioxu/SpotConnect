@@ -8,6 +8,10 @@ if [[ ! -x "$hori_package/bin/HoriSpotConnect" ]]; then
   exec "$hori_package/dist/HoriSpotConnect-0.1.0-preview.4-macos-arm64/scripts/install.sh" "$@"
 fi
 if [[ $(uname -s) != Darwin || $(uname -m) != arm64 ]]; then echo "macOS ARM64 required" >&2; exit 2; fi
+hori_macos_major=$(/usr/bin/sw_vers -productVersion | cut -d. -f1)
+if [[ ! "$hori_macos_major" =~ ^[0-9]+$ || "$hori_macos_major" -lt 14 ]]; then
+  echo "This Preview package requires macOS 14 or later (bundled native AirPlay sender)." >&2; exit 2
+fi
 hori_agent=true
 if [[ ${1:-} == --no-launchagent ]]; then hori_agent=false
 elif [[ $# != 0 ]]; then echo "usage: install.sh [--no-launchagent]" >&2; exit 2; fi

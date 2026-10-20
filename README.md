@@ -52,13 +52,13 @@ RAOP 握手及原创本地 FLAC 的 PCM 发送；从热点回到局域网后，�
 
 ### 安装与运行
 
-下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.3)，
+下载 [Preview 发布包](https://github.com/hhhoratioxu/SpotConnect/releases/tag/v0.1.0-preview.4)，
 解压并运行 scripts/install.sh。只写入当前用户目录，不需要 sudo。
 
 ```sh
-curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.3/HoriSpotConnect-0.1.0-preview.3-macos-arm64.zip -o HoriSpotConnect.zip
+curl -fL https://github.com/hhhoratioxu/SpotConnect/releases/download/v0.1.0-preview.4/HoriSpotConnect-0.1.0-preview.4-macos-arm64.zip -o HoriSpotConnect.zip
 ditto -xk HoriSpotConnect.zip .
-bash HoriSpotConnect-0.1.0-preview.3-macos-arm64/scripts/install.sh
+bash HoriSpotConnect-0.1.0-preview.4-macos-arm64/scripts/install.sh
 ```
 
 安装器验证 SHA-256 和签名，安装到 ~/Library/Application Support/HoriSpotConnect，
@@ -140,12 +140,13 @@ PCM 逐样本比较、CDN/AES/HTTP Range 路径、Vorbis 96/160/320 解码与 Se
 音频为原创合成、CC0-1.0，未分发 Spotify 商业录音。
 [完整测试记录](docs/TEST-RESULTS.md) · [真实环境验收](docs/ACCEPTANCE.md)
 
-构建目标最低 macOS 13；本机结果不代表已测试所有 macOS 版本或 M1/M4 机型。
+此发布包要求 macOS 14 或更新版本、Apple Silicon；包含的官方原生发送端最低要求
+macOS 14。已实际测试的本机是 M1 Pro / macOS 27.2，M4 Pro 和其他系统版本未实机验收。
 GitHub Actions 仅构建公开源码和离线测试，不连接个人 Spotify/HomePod。
 
 ## English
 
-This is a **Preview / Experimental** macOS Apple Silicon fork. Genuine Spotify
+This is a **Preview / Experimental** macOS 14+ Apple Silicon fork. Genuine Spotify
 FLAC streaming is **not implemented**. The Spotify path remains Vorbis. Encoding
 that PCM as ALAC avoids another lossy encode, but cannot restore discarded data.
 

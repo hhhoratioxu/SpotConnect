@@ -62,3 +62,18 @@ target_link_libraries(hori-raop-probe PRIVATE hori_audio
   ${CMAKE_CURRENT_SOURCE_DIR}/../common/libcodecs/targets/macos/arm64/libcodecs.a
   ${CMAKE_CURRENT_SOURCE_DIR}/../common/libpupnp/targets/macos/arm64/libpupnp.a
   ${CMAKE_CURRENT_SOURCE_DIR}/../spotraop/libopenssl/targets/macos/arm64/libopenssl.a)
+add_executable(hori-output-tests tests/airplay-output.cpp
+  ../spotraop/src/HoriAirplayOutput.cpp ${HORI_CROSS_SOURCES})
+target_include_directories(hori-output-tests PRIVATE ../common/crosstools/src
+  ../spotraop/libraop/targets/include ../spotraop/libopenssl/targets/macos/arm64/include)
+target_compile_definitions(hori-output-tests PRIVATE USE_SSL SSL_STATIC_LIB _GNU_SOURCE)
+target_compile_options(hori-output-tests PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(hori-output-tests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../spotraop/libraop/targets/macos/arm64/libraop.a
+  ${CMAKE_CURRENT_SOURCE_DIR}/../common/libcodecs/targets/macos/arm64/libcodecs.a
+  ${CMAKE_CURRENT_SOURCE_DIR}/../spotraop/libopenssl/targets/macos/arm64/libopenssl.a)
+foreach(case pcm controls failure bounded)
+  add_test(NAME airplay2_${case} COMMAND hori-output-tests ${case}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/fake-airplay.py)
+  set_tests_properties(airplay2_${case} PROPERTIES TIMEOUT 15)
+endforeach()

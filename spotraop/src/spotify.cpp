@@ -39,6 +39,7 @@ extern "C" {
 
 #include "spotify.h"
 #include "metadata.h"
+#include "HoriAirplayOutput.h"
 
 #define BYTES_PER_FRAME 4
 
@@ -166,7 +167,7 @@ size_t CSpotPlayer::writePCM(uint8_t* pcm, size_t bytes, std::string_view trackU
         /* We could send the notifyAudio() here but that would be delay seconds too early so it's
          * not great to use timers instead of events but in that case it's for sure that we'll
          * start at the set time - airplay is just a long wire */
-        startTime = gettime_ms64() + delay;
+        startTime = gettime_ms64() + (hori_output_native(raopClient) ? 4500 : delay);
     }
 
     if (!raopcl_accept_frames(raopClient)) return (size_t) 0;
@@ -613,7 +614,7 @@ void spotOpen(uint16_t portBase, uint16_t portRange, char *username, char *passw
 }
 
 int spotValidateQualityMode(void) {
-    fprintf(stderr, "HoriSpotConnect 0.1.0-preview.3 | Experimental | original upstream copyrights retained\n");
+    fprintf(stderr, "HoriSpotConnect 0.1.0-preview.4 | Experimental | original upstream copyrights retained\n");
     try {
         const auto* mode = std::getenv("HORISPOT_QUALITY");
         CSpotPlayer::qualityMode = mode ? cspot::parseQualityMode(mode) : cspot::QualityMode::Legacy;

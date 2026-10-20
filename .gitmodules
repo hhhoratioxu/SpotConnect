@@ -29,3 +29,6 @@
 [submodule "common/libpupnp"]
 	path = common/libpupnp
 	url = https://github.com/philippe44/libpupnp
+[submodule "third_party/airplay-cli"]
+	path = third_party/airplay-cli
+	url = https://github.com/music-assistant/airplay-cli.git

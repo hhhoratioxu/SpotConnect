@@ -31,6 +31,8 @@ chmod +x "$hori_work/tools/bin/protoc"
 git -C "$hori_root" submodule update --init --recursive --filter=blob:none \
   common/cspot common/crosstools common/libcodecs common/libpupnp common/libmbedtls \
   spotraop/libraop spotraop/http-fetcher spotraop/libopenssl spotraop/libmdns
+git -C "$hori_root" submodule update --init --filter=blob:none third_party/airplay-cli
+python "$hori_root/scripts/prepare-airplay.py"
 
 hori_prefix="$hori_work/deps"
 if [[ ! -f "$hori_prefix/lib/libFLAC.a" ]]; then
@@ -58,7 +60,7 @@ cmake -S "$hori_root/macos" -B "$hori_build" -G Ninja \
   -DCMAKE_PREFIX_PATH="$hori_prefix" -DHORI_SANITIZE="$hori_sanitize" \
   -DBELL_EXTERNAL_MBEDTLS="$hori_root/common/libmbedtls" -DMBEDTLS_RELEASE=RELEASE
 cmake --build "$hori_build" --target spotraop-macos-arm64-static hori-discover \
-  hori-audio-probe hori-raop-probe audio-tests hori-native-tests hori-network-tests hori-alac-tests --parallel 8
+  hori-audio-probe hori-raop-probe audio-tests hori-native-tests hori-network-tests hori-alac-tests hori-output-tests --parallel 8
 ctest --test-dir "$hori_build" --output-on-failure --no-tests=error \
   --output-junit "$hori_build/test-results.xml"
 echo "Verified native build: $hori_build"

@@ -1,5 +1,13 @@
 # HoriSpotConnect changelog
 
+## 0.1.0-preview.4 candidate — 2026-10-20
+
+- A fresh native AirPlay 2/NTP original-tone test was audibly confirmed by the user.
+- Route the tested HomePod 2 model through a pinned official native sender, with a bounded PCM pipe and supervised lifecycle; retain explicit legacy selection.
+- Preserve upstream sender source history, GPL and third-party notices. No administrator clock service is required.
+- Add four independent transport/control/failure/buffering tests: native and project ASan/UB suites 56/56 PASS.
+- Real Spotify music/control acceptance on this new path is pending. Spotify FLAC remains unavailable.
+
 ## 0.1.0-preview.3 — 2026-10-15
 
 Preview / Experimental diagnostics. HomePod music audibility has not passed;

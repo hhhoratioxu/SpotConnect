@@ -41,6 +41,7 @@
 #include "mdnssvc.h"
 #include "http_fetcher.h"
 #include "raop_client.h"
+#include "HoriAirplayOutput.h"
 
 #include "spotraop.h"
 #include "config_raop.h"
@@ -449,6 +450,8 @@ static bool mDNSsearchCallback(mdnssd_service_t *slist, void *cookie, bool *stop
 			if (!*(Device->Config.Name)) sprintf(Device->Config.Name, glNameFormat, Device->FriendlyName);
 			Device->SpotPlayer = spotCreatePlayer(glClientId, glClientSecret, Device->Config.Name, id, Device->Credentials, glHost, Device->Config.VorbisRate, 
 												  FRAMES_PER_BLOCK, Device->Config.ReadAhead, (struct shadowPlayer*)Device);
+			if (Device->SpotPlayer && hori_output_native(Device->Raop))
+				spotNotify(Device->SpotPlayer, SHADOW_VOLUME, (int)(0.2 * UINT16_MAX));
 			if (!Device->SpotPlayer) {
 				LOG_WARN("[%p]: Can't create SpotPlayer", Device);
 				Device->Running = false;
@@ -687,6 +690,7 @@ static bool AddRaopDevice(struct sMR *Device, mdnssd_service_t *s) {
 								 Crypto, Auth, Device->Config.RaopCredentials, password, Cipher, md, am,
 								 44100, 16, 2,
 								 Device->Volume);
+	if (hori_output_register(Device->Raop, glHost, am)) Device->Volume = -24.0;
 	LOG_INFO("AIRPLAY_OUTPUT wire_codec=AppleLossless encoder_requested=%s sample_rate=44100 bits=16 channels=2 receiver_acceptance=UNVERIFIED bit_perfect=UNVERIFIED",
 			 Device->Config.AlacEncode ? "ALAC" : "ALAC_RAW");
 

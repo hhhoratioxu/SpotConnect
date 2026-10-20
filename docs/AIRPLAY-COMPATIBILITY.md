@@ -54,3 +54,34 @@ PCM frames over 28 reports while the sender stayed in streaming/sane state.
 Fourteen receiver timing replies and no observed audio socket errors accompanied
 this run. The user again reported silence. The compatibility hypothesis remains
 unconfirmed: sender-side counters cannot establish a receiver render timeline.
+
+
+## 2026-10-20 native AirPlay 2 candidate
+
+A fresh Bonjour query found the same AudioAccessory6,1 receiver with OS 27.2,
+using different DHCP addresses. The old PTP comparison had no execution artifacts.
+Its hard-coded addresses were unsuitable after a network change; that administrator
+launcher has been retired locally without executing it.
+
+Using the newly resolved peer, port and local discovery interface, a bounded
+native AirPlay 2 / NTP session sent six seconds of original interleaved s16le PCM.
+The user explicitly confirmed hearing the alternating tones. The sender reported
+native/NTP routing, receiver format capabilities, SETUP, volume acceptance and
+START. This is an actual local-audio audible PASS, not a Spotify playback pass.
+The diagnostic's final FIFO cleanup initially failed because the child had already
+removed its FIFO; that cleanup was corrected. The audible confirmation and raw
+status evidence are retained independently from that process-cleanup failure.
+
+The candidate routes the tested HomePod 2 model through the unchanged official
+airplay-cli v0.5.8 sender, pinned by SHA-256 and corresponding-source submodule.
+Other models keep their existing RAOP route. HORISPOT_AIRPLAY_OUTPUT=legacy selects
+the old route explicitly. The native route requests 44100 Hz / 16-bit stereo,
+uses NTP without privilege, starts at 20% volume, bounds pending PCM, waits for
+flush acknowledgments and supervises child exit. Five packaged executables retain
+signatures and source/license references. Native metadata/artwork propagation and
+HomePod button feedback have not been implemented for this candidate.
+
+Four new synthetic child-process tests verify exact PCM pipe bytes, control
+commands and warm flush, child failure, and bounded pre-start buffering. Full
+native and project ASan/UB suites pass 56/56. Real Spotify music and controls on
+the new adapter remain pending until the installed candidate is exercised.

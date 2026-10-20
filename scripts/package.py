@@ -114,8 +114,9 @@ if not flac_license.exists():
 if not flac_license.exists():
     raise RuntimeError('libFLAC license source is missing')
 shutil.copy2(flac_license, licenses / 'libFLAC-1.5.0-COPYING.Xiph')
-for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
-    shutil.copy2(root / 'third_party/airplay-cli' / name, licenses / ('airplay-cli-' + name))
+for notice_name in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
+    shutil.copy2(root / 'third_party/airplay-cli' / notice_name,
+                 licenses / ('airplay-cli-' + notice_name))
 test_xml = build / 'test-results.xml'
 if test_xml.exists():
     shutil.copy2(test_xml, package / 'docs/LOCAL-TEST-RESULTS.xml')
